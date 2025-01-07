@@ -1,0 +1,86 @@
+%%% ArXiv template from https://www.overleaf.com/latex/templates/an-arxiv-template/gbzmznbxvwpr
+
+\documentclass[10pt]{article}
+\usepackage{graphicx}
+\baselineskip=16pt
+
+\usepackage{indentfirst,csquotes}
+
+\topmargin= .5cm
+\textheight= 20cm
+\textwidth= 32cc
+\baselineskip=16pt
+
+\evensidemargin= .9cm
+\oddsidemargin= .9cm
+
+\usepackage{amssymb,amsthm,amsmath}
+\usepackage{xcolor,paralist,hyperref,titlesec,fancyhdr,etoolbox}
+
+
+\usepackage[square,sort,comma,numbers]{natbib}
+\newtheorem{theorem}{Theorem}[]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+
+\hypersetup{ colorlinks=true, linkcolor=black, filecolor=black, urlcolor=black }
+\def\proof{\noindent {\it Proof. $\, $}}
+\def\endproof{\hfill $\Box$ \vskip 5 pt }
+
+
+\usepackage{lipsum}
+
+\title{Ongoing work on MCWAL} %%%%%%%%%%%%
+\author{Pierre Borie}
+\date{\today}
+
+
+
+
+%%% PERSONAL ADD-ONS
+\usepackage[square,sort,comma,numbers]{natbib}
+\include{macros}
+
+\begin{document}
+	
+	\maketitle
+	
+	\let\thefootnote\relax
+	\footnotetext{MSC2020: Primary 00A05, Secondary 00A66.} %%%%%%%%%%
+	
+	\begin{abstract}
+		\noindent This informal document  reflects the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm (rapper) name is MCWAL for Moindres Carr\'es With Augmented Lagrangian.
+	\end{abstract} %%%%%%%%% 
+	
+	
+
+	\section{Introduction}\label{sec:intro}
+	
+	We consider least squares problems subject to both nonlinear and linear constraints of the form
+	\begin{equation}
+		\label{eq:model_cnls}
+		\begin{aligned}
+			\min_{x\in \RR^n} \quad & \dfrac{1}{2} \|r(x)\|^2 \\
+			\text{s.t.} \quad & c(x) = 0 \\
+			& Ax = b \\
+			& \ell \le x \le u,
+		\end{aligned}
+	\end{equation}
+	where $r\colon \RR^n \to \RR^d$  and $c\colon \RR^n \to \RR^t$ are assumed to be nonlinear, potentially non convex, continuously differentiable functions, $\|\cdot\| $ denotes the euclidean norm, $A$ is a $m\times n \ ( m \le n)$, $b \in \RR^m$ and $\ell$ and $u$ are vectors in $\RR^n$. For the latter and without loss of generality, components can be set to $\pm \infty$ for unbounded parameters. In the context of least squares problems, components $r_i$ of the function $r$ are often denoted as the residuals.
+	
+	We will also refer to the linear constraints using the set notation
+	\begin{equation}
+		\label{eq:linear_constraints}
+		X = \left\{ x \in \RR^n \ | \ Ax=b,\ \ell \le x \le u\right\}.
+	\end{equation}
+	
+	
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs}
+\end{document}
