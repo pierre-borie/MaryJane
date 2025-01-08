@@ -1,6 +1,6 @@
 %%% ArXiv template from https://www.overleaf.com/latex/templates/an-arxiv-template/gbzmznbxvwpr
 
-\documentclass[10pt]{article}
+\documentclass{amsart}
 \usepackage{graphicx}
 \baselineskip=16pt
 
@@ -15,10 +15,9 @@
 \oddsidemargin= .9cm
 
 \usepackage{amssymb,amsthm,amsmath}
-\usepackage{xcolor,paralist,hyperref,titlesec,fancyhdr,etoolbox}
+\usepackage{xcolor,paralist,hyperref,fancyhdr,etoolbox}
 
 
-\usepackage[square,sort,comma,numbers]{natbib}
 \newtheorem{theorem}{Theorem}[]
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{example}[theorem]{Example}
@@ -28,36 +27,37 @@
 \newtheorem{conjecture}[theorem]{Conjecture}
 
 
-\hypersetup{ colorlinks=true, linkcolor=black, filecolor=black, urlcolor=black }
+\hypersetup{colorlinks=true, linkcolor=black, filecolor=black, urlcolor=black }
 \def\proof{\noindent {\it Proof. $\, $}}
 \def\endproof{\hfill $\Box$ \vskip 5 pt }
 
 
-\usepackage{lipsum}
 
-\title{Ongoing work on MCWAL} %%%%%%%%%%%%
-\author{Pierre Borie}
-\date{\today}
+
+
 
 
 
 
 %%% PERSONAL ADD-ONS
 \usepackage[square,sort,comma,numbers]{natbib}
+\allowdisplaybreaks
+\numberwithin{equation}{section}
+%\usepackage{natbib}
 \include{macros}
 
 \begin{document}
 	
-	\maketitle
 	
-	\let\thefootnote\relax
-	\footnotetext{MSC2020: Primary 00A05, Secondary 00A66.} %%%%%%%%%%
+	\title{Ongoing work on MCWAL} %%%%%%%%%%%%
+	\author{Pierre Borie}
+	\date{\today}
 	
 	\begin{abstract}
 		\noindent This informal document  reflects the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm (rapper) name is MCWAL for Moindres Carr\'es With Augmented Lagrangian.
 	\end{abstract} %%%%%%%%% 
 	
-	
+	\maketitle
 
 	\section{Introduction}\label{sec:intro}
 	
@@ -71,16 +71,42 @@
 			& \ell \le x \le u,
 		\end{aligned}
 	\end{equation}
-	where $r\colon \RR^n \to \RR^d$  and $c\colon \RR^n \to \RR^t$ are assumed to be nonlinear, potentially non convex, continuously differentiable functions, $\|\cdot\| $ denotes the euclidean norm, $A$ is a $m\times n \ ( m \le n)$, $b \in \RR^m$ and $\ell$ and $u$ are vectors in $\RR^n$. For the latter and without loss of generality, components can be set to $\pm \infty$ for unbounded parameters. In the context of least squares problems, components $r_i$ of the function $r$ are often denoted as the residuals.
+	where $r\colon \RR^n \to \RR^d$  and $c\colon \RR^n \to \RR^t$ are assumed to be nonlinear, potentially non convex, continuously differentiable functions, $\|\cdot\| $ denotes the euclidean norm, $A$ is a full rank $m\times n$  matrix $( m \le n)$, $b \in \RR^m$ and $\ell$ and $u$ are vectors in $\RR^n$. Without loss of generality, some components of the latter two vectors can be set to $\pm \infty$ for unbounded parameters. In the context of least squares problems, components $r_i$ of the function $r$ are often denoted as the residuals.
 	
-	We will also refer to the linear constraints using the set notation
+	We will also refer to the linear constraints using the set notation $\bsell$
+	
 	\begin{equation}
 		\label{eq:linear_constraints}
 		X = \left\{ x \in \RR^n \ | \ Ax=b,\ \ell \le x \le u\right\}.
 	\end{equation}
 	
+	\subsection{Other notations and generalities on least squares}
 	
-	
+	 $\scal{\cdot}{\cdot}$ is the canonical inner product, the one inducing the norm $\|\cdot\|$.
+	 
+	 
+	 
+	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
+	 \begin{subequations}
+	 		\begin{align}
+	 		\nabla f(x) &= J(x)^Tr(x)\label{subeq:ls_grad} \\
+	 		\nabla^2 f(x) &= J(x)^TJ(x) + S(x) , \label{subeq:ls_hessian}
+	 		\end{align}
+	 \end{subequations}
+	 where $J(x) = \left[\dfrac{\partial r_i}{\partial x_j}\right]_{(i,j)}$ is the Jacobian matrix of the residuals and the second component of the Hessian $S(x) = \sum_{i=1}^{d} r_i(x) \nabla^2r_i(x) $. The latter is expensive in both computational time and storage, since it requires $d$ computations of $n\times n$ matrices. Hence, this component of the Hessian is the one to be approximated. 
+	 
+	 When considering iterative methods for solving problem~\eqref{eq:model_cnls}, $k$ will, if not mentioned otherwise, refer to the iteration number. In order to simplify notations, quantities relative to a given iteration will be noted with the iteration number as an index, such as $x_k$ for the iterate, $r_k$ for $r(x_k)$ ,$J_k$ for $J(x_k)$ etc.
+	 
+	 We now address is a quick review of the three most popular classes of approximations. For a comprehensive review of these reviews, we refer the reader to the chapter 10 of \cite{dennisschnabel:1996}.
+	 
+	 The \textbf{Gauss--Newton} approximation sets $S(x)$ to the zero matrix. It is the cheapest to compute, since the Jacobian is necessary to evaluate the gradient and works well in practice for zero residuals problems~\cite{dennisschnabel:1996}. When solving problem~\eqref{eq:model_cnls} using an iterative method, this approximation amounts to linearizing the residuals function within the norm.
+	 
+	 Next, the \textbf{Levengerg--Marquardt} (LM) method~\cite{levenberg:1944,marquardt:1963} sets $S(x)$ to a multiple of the identity matrix $\sigma I$ where $\sigma$ is a regularization parameter. It is still cheap to compute but only requires updating the regularization parameter throughout the iterative process. This method can be seen as the early stage of the trust region methods~\cite{conn-etal:2000}. It works well in practice on zero and small residuals problems. 
+	 
+	 Finally, one can compute an approximation of $\nabla^2f(x)$ in a similar pattern as in \textbf{quasi-Newton} methods \cite[][Chapter 6]{nocedalwright:2006} but targeted on the second order components. It has a higher computational cost than the previous two but is more accurate on large residuals problems. In~\cite{dennisetal:1981}, the authors exploit this approach in a adaptative scheme, where an estimation of the curvature is used to decide whether or not the quasi-Newton approximation is worth to use compared to the Gauss-Newton one.
+	 
+	 It is important to bear in mind that choosing between a "cheap" approximation and a quasi-Newton type one implies making compromises. Depending on the initialization, the quasi-Newton approximation will take some iterations to be good and the accuracy will not be there when most needed, i.e. at the starting point potentially far from the solution, and will match the Gauss-Newton close to the solution on small residuals problems. In other words, the quasi-Newton is not accurate enough when most needed and very accurate when a way cheaper alternative does the same job.
+		
 	\bibliographystyle{plainnat}
 	\bibliography{refs}
 \end{document}
