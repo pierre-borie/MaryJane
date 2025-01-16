@@ -61,6 +61,8 @@
 	\end{abstract} %%%%%%%%% 
 	
 	\maketitle
+	
+	\let\thefootnote\relax
 
 	\section{Introduction}\label{sec:intro}
 	
@@ -84,7 +86,15 @@
 	\end{equation}
 	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix. The set $\calX$ is thus convex.
 	
-	\subsection{Other notations and generalities on least squares}
+	\subsection{Notations and reminders of nonlinear programming}
+	
+	The Jacobian matrix of constraints function $h$ is noted $A$.
+	
+	When considering iterative methods for solving problem~\eqref{eq:model_cnls}, $k$ will, if not mentioned otherwise, refer to the iteration number. In order to simplify notations, quantities relative to a given iteration will be noted with the iteration number as an index, such as $x_k$ for the iterate, $r_k$ for $r(x_k)$ ,$J_k$ for $J(x_k)$ etc.
+	
+	Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
+	
+	\subsection{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
 	 
@@ -112,7 +122,7 @@
 	 
 	 It is important to bear in mind that choosing between a "cheap" approximation and a quasi-Newton type one implies making compromises. Depending on the initialization, the quasi-Newton approximation will take some iterations to be good and the accuracy will not be there when most needed, i.e. at the starting point potentially far from the solution, and will match the Gauss-Newton close to the solution on small residuals problems. In other words, the quasi-Newton is not accurate enough when most needed and very accurate when a way cheaper alternative does the same job.
 	 
-	 \subsection{Reminders of nonlinear programming}
+	 
 	 
 	 \section{Augmented Lagrangian reformulation}
 	 
@@ -120,7 +130,7 @@
 	 
 	 \begin{equation}
 	 	\label{eq:al}
-	 	\calL(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
+	 	\calL_A(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
 	 \end{equation}
 	 
 	 where $\lambda\in \Real^m$ is the vector of Lagrange multipliers and $\mu > 0$ is the penalty parameter.
@@ -128,20 +138,20 @@
 	 One has the following expression of the gradient: 
 	 \begin{equation}
 	 	\label{eq:al_grad}
-	 	\nabla_x \calL(x,\lambda,\mu) = J(x)^Tr(x) + A^T\pi(x,\lambda,\mu),
+	 	\nabla_x \calL_A(x,\lambda,\mu) = J(x)^Tr(x) + A^T\pi(x,\lambda,\mu),
 	 \end{equation}
 	 with $\pi(x,\lambda,\mu):=\lambda + \mu h(x)$ is the first-order estimates of the Lagrange multipliers. 
 	 
 	 The Hessian is given by
 	 \begin{equation}\label{eq:al_hessian}
-	 	\nabla^2_{xx} \calL(x,\lambda,\mu) = J(x)^TJ(x) + \mu A(x)^TA(x) +  S(x) + \sum_{i=1}^d \nabla^2 h_i(x) \pi(x,\lambda,\mu).
+	 	\nabla^2_{xx} \calL_A(x,\lambda,\mu) = J(x)^TJ(x) + \mu A(x)^TA(x) +  S(x) + \sum_{i=1}^d \nabla^2 h_i(x) \pi(x,\lambda,\mu).
 	 \end{equation}
 	 
 	 For fixed $\lambda$ and $\mu$, reformulating problem~\eqref{eq:model_cnls} with function~\eqref{eq:al} gives the linearly constrained problem
 	 
 	 \begin{equation}\label{eq:model_cnls_al_reformulation} 
 	 	\begin{aligned}
-	 		\min_{x} \quad& \calL(x,\lambda,\mu)  \\
+	 		\min_{x} \quad& \calL_A(x,\lambda,\mu)  \\
 	 		\text{s.t.}  \quad & x \in \calX 
 	 	\end{aligned}	
 	 \end{equation}
@@ -156,13 +166,13 @@
 	 	\calQ_k(p) = \dfrac{1}{2}\scal{p}{H_kp} + \scal{g_k}{p},
 	 \end{equation}
 	 
-	 where $H_k:=\nabla^2_{xx} \calL(x_k,\lambda_k,\mu_k)$ or an approximation of it and $g_k:=\nabla_x \calL(x_k,\lambda_k,\mu_k)$.
+	 where $H_k:=\nabla^2_{xx} \calL_A(x_k,\lambda_k,\mu_k)$ or an approximation of it and $g_k:=\nabla_x \calL_A(x_k,\lambda_k,\mu_k)$.
 	 
 	 Vector $p$ denotes the unknown of the subproblem whose (approximate) solution $p_k$ shall be used to compute the new iterate $x_{k+1}=x_k+p_k$.
 	 
 	 For the linear constraints, we want $x_k+p\in \calX$ which will be provided if:
 	 \begin{itemize}
-	 	\item Cp=0 (provided that $Cx_0=b$)
+	 	\item \(Cp=0\) (provided that $Cx_0=b$)
 	 	\item$ x_k-\ell \le p \le u-x_k$
 	 \end{itemize}
 	 The above conditions shall be written $p\in \calX_k$ where $\calX_k:= \left\{p \ | \ Cp=0,\ x_k-\ell \le p \le u-x_k\right\}$.
