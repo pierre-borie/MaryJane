@@ -1,6 +1,6 @@
 %%% ArXiv template from https://www.overleaf.com/latex/templates/an-arxiv-template/gbzmznbxvwpr
 
-\documentclass[reqno]{amsart}
+\documentclass[10pt]{article}
 \usepackage{graphicx}
 \baselineskip=16pt
 
@@ -53,16 +53,16 @@
 	
 	\title{Ongoing work on MCWAL} %%%%%%%%%%%%
 	\author{Pierre Borie}
-	\address{Deparment of Computer Science and Operations Research, University of Montreal, Montreal, QC, Canada.}
-	\date{\today}
+%	\date{\today}
+	
+	
+	
+	\maketitle
 	
 	\begin{abstract}
 		\noindent This informal document  reflects the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm (rapper) name is MCWAL for Moindres Carr\'es With Augmented Lagrangian.
 	\end{abstract} %%%%%%%%% 
 	
-	\maketitle
-	
-	\let\thefootnote\relax
 
 	\section{Introduction}\label{sec:intro}
 	
@@ -82,7 +82,7 @@
 	
 	\begin{equation}
 		\label{eq:linear_constraints}
-		\calX = \left\{ x \in \RR^n \ | \ Cx=b,\ \ell \le x \le u\right\},
+		\calX = \left\{ x \in \RR^n \ | \ Cx=b,\ l \le x \le u\right\},
 	\end{equation}
 	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix. The set $\calX$ is thus convex.
 	
@@ -93,6 +93,57 @@
 	When considering iterative methods for solving problem~\eqref{eq:model_cnls}, $k$ will, if not mentioned otherwise, refer to the iteration number. In order to simplify notations, quantities relative to a given iteration will be noted with the iteration number as an index, such as $x_k$ for the iterate, $r_k$ for $r(x_k)$ ,$J_k$ for $J(x_k)$ etc.
 	
 	Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
+	
+	In this section we consider the general mathematical program\footnote{Shall I write the KKT conditions w.r.t this formulation and then consider multipliers for the bounds?}
+	\begin{equation}
+		\label{eq:math_prog}
+		\begin{aligned}
+			\min_x \quad & f(x) \\
+			\text{s.t.} \quad & h(x)=0 \\
+			& l \le x \le u
+		\end{aligned}
+	\end{equation}
+	with the same assumptions on of differentiability of functions $f$ and \(h\). We introduce the Lagrangian associated to problem~\eqref{eq:math_prog}:
+	\begin{equation}
+		\label{eq:lagrangian}
+		\ell(x,\lambda) = f(x) + \scal{\lambda}{h(x)},
+	\end{equation}
+	where $\lambda$ is the vector of Lagrange multipliers. Algorithms discussed aim to find local minimum of problem~\eqref{eq:math_prog}, i.e. feasible and of minimal value in s neighborhood. Under suitable assumptions, one can establish necessary and even sufficient conditions for local optimality. One of the most important assumptions belongs to the familty of constraints qualifications. The following is the one we will employ.
+	
+	\begin{definition}\label{def:licq}
+		\textbf{(LICQ)}
+		The LICQ holds at $x^*$ if the gradients of the equality constraints evaluated at $x^*$ are linearly independent. In other terms, the matrix $A(x)$ is full rank.
+	\end{definition}
+	
+	Using this and standard differentiability assumptions, one can state first-order necessary optimality conditions, also known as KKT conditions. 
+	
+	\begin{definition}\label{def:kkt_point}
+		\textbf{(KKT conditions)}
+		
+		A point $x^*$ satisfies the KKT conditions if $x^* $ is feasible and there exists multipliers \(\lambda^*\) such that \[\nabla_x \ell (x^*,\lambda^*)=0.\]
+	\end{definition}
+	
+	
+	A point satisfying those conditions if also said to be a KKT point or a first order critical point for problem~\eqref{eq:math_prog}. Depending on the context, we would refer to a KKT point either by just wrting $x^*$ or the couple formed after $x^*$ and its associated Lagrange multiplier $\lambda^*$The necessary conditions follow.
+	
+	\begin{theorem}\label{theo:fonc}
+		\textbf{(First Order Necessary Conditions)\cite[][Theorem 12.1]{nocedalwright:2006}}
+		
+		Let $x^*$ be a local solution of~\eqref{eq:math_prog} at which the LICQ holds. Then $x^*$ is a KKT point.
+	\end{theorem}
+	
+	Sufficient optimality conditions can be established using second order information.
+	
+	\begin{definition}\label{def:soc}
+		\textbf{(Second Order Conditions)}
+		
+		A point $(x^*,\lambda^*)$ satisfies the second order conditions if it is a KKT point for ~\eqref{eq:math_prog} at which the LICQ holds and if the matrix $\nabla_{xx}^2\ell(x^*,\lambda^*)$ is positive definite on the null space of the constraints Jacobian, i.e.:
+		\[\forall w \text{ verifying } \scal{A(x^*)}{w}=0,\ \scal{w}{\nabla_{xx}^2\ell(x^*,\lambda^*)w} > 0.\]
+	\end{definition}
+	
+	\begin{theorem} \textbf{(Second Order Sufficient Conditions) \cite[][Theorem 12.5]{nocedalwright:2006}}
+		If $x^*$ satisfies the second order conditions, then $x^*$ is a local minimum of~\eqref{eq:math_prog}.
+	\end{theorem}
 	
 	\subsection{Generalities on least squares}
 	 
@@ -126,32 +177,56 @@
 	 
 	 \section{Augmented Lagrangian reformulation}
 	 
-	 We introduce the Augmented Lagrangian (AL) where only the violation of the nonlinear constraints is penalized:
+	 In this section, we introduce the framework of Augmented Lagrangian-based algorithms and describe an application to our least-squares case.
+	 
+	 \subsection{Generalities}
+	 
+	 In order to remain general, we temporarly consider the mathematical program~\eqref{eq:math_prog} and shall comeback to the least-squares shortly after. 
+	 We introduce the Augmented Lagrangian (AL) function associated to program~\eqref{eq:math_prog}:
 	 
 	 \begin{equation}
 	 	\label{eq:al}
-	 	\calL_A(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
+	 	\Phi_A(x,\lambda,\mu) := f(x) + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
 	 \end{equation}
 	 
 	 where $\lambda\in \Real^m$ is the vector of Lagrange multipliers and $\mu > 0$ is the penalty parameter.
 	 
+	 Function~\eqref{eq:al} is nothing than the Lagrangian~\eqref{eq:lagrangian} with a quadratic penalty term, hence the adjective \textit{Augmented}. The problem of interest is now
+	 
+	 \begin{equation}
+	 	\label{eq:general:al}
+	 \end{equation}
+	 
+	 AL-based algorithms fall into the class of penalty methods that generally enable one to use iterative methods for unconstrained optimization  while steel achieving feasibility. In our case, moving the nonlinear constraints into the objective simplifies the set of constraints since only bounds constraints are left.
+	 
+	 
+	 \subsection{Application to structured least-squares}
+	 
+	 We now consider program~\eqref{eq:model_cnls}, for which the AL function is given by
+	 
+	 \begin{equation}
+	 	\label{eq:lsal}
+	 	\Phi_A(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
+	 \end{equation}
+	 
+	 Contrary to formulation~\eqref{eq:al}, we keep the linear equality constraints as is and penalize the violation of the nonlinear constraints.The framework remains the same, only the computation of the projection onto the set $\calX$ shall differ.
 	 One has the following expression of the gradient: 
 	 \begin{equation}
 	 	\label{eq:al_grad}
-	 	\nabla_x \calL_A(x,\lambda,\mu) = J(x)^Tr(x) + A^T\pi(x,\lambda,\mu),
+	 	\nabla_x \Phi_A(x,\lambda,\mu) = J(x)^Tr(x) + A^T\pi(x,\lambda,\mu),
 	 \end{equation}
 	 with $\pi(x,\lambda,\mu):=\lambda + \mu h(x)$ is the first-order estimates of the Lagrange multipliers. 
 	 
 	 The Hessian is given by
 	 \begin{equation}\label{eq:al_hessian}
-	 	\nabla^2_{xx} \calL_A(x,\lambda,\mu) = J(x)^TJ(x) + \mu A(x)^TA(x) +  S(x) + \sum_{i=1}^d \nabla^2 h_i(x) \pi(x,\lambda,\mu).
+	 	\nabla^2_{xx} \Phi_A(x,\lambda,\mu) = J(x)^TJ(x) + \mu A(x)^TA(x) +  S(x) + \sum_{i=1}^d \nabla^2 h_i(x) \pi(x,\lambda,\mu).
 	 \end{equation}
 	 
 	 For fixed $\lambda$ and $\mu$, reformulating problem~\eqref{eq:model_cnls} with function~\eqref{eq:al} gives the linearly constrained problem
 	 
 	 \begin{equation}\label{eq:model_cnls_al_reformulation} 
 	 	\begin{aligned}
-	 		\min_{x} \quad& \calL_A(x,\lambda,\mu)  \\
+	 		\min_{x} \quad& \Phi_A(x,\lambda,\mu)  \\
 	 		\text{s.t.}  \quad & x \in \calX 
 	 	\end{aligned}	
 	 \end{equation}
@@ -166,16 +241,16 @@
 	 	\calQ_k(p) = \dfrac{1}{2}\scal{p}{H_kp} + \scal{g_k}{p},
 	 \end{equation}
 	 
-	 where $H_k:=\nabla^2_{xx} \calL_A(x_k,\lambda_k,\mu_k)$ or an approximation of it and $g_k:=\nabla_x \calL_A(x_k,\lambda_k,\mu_k)$.
+	 where $H_k:=\nabla^2_{xx} \Phi_A(x_k,\lambda_k,\mu_k)$ or an approximation of it and $g_k:=\nabla_x \Phi_A(x_k,\lambda_k,\mu_k)$.
 	 
 	 Vector $p$ denotes the unknown of the subproblem whose (approximate) solution $p_k$ shall be used to compute the new iterate $x_{k+1}=x_k+p_k$.
 	 
 	 For the linear constraints, we want $x_k+p\in \calX$ which will be provided if:
 	 \begin{itemize}
 	 	\item \(Cp=0\) (provided that $Cx_0=b$)
-	 	\item$ x_k-\ell \le p \le u-x_k$
+	 	\item$ x_k-l \le p \le u-x_k$
 	 \end{itemize}
-	 The above conditions shall be written $p\in \calX_k$ where $\calX_k:= \left\{p \ | \ Cp=0,\ x_k-\ell \le p \le u-x_k\right\}$.
+	 The above conditions shall be written $p\in \calX_k$ where $\calX_k:= \left\{p \ | \ Cp=0,\ x_k-l \le p \le u-x_k\right\}$.
 	 
 	As part of our method, we will also add a trust region constraint of the form $\|p\|_k \le \Delta_k$ for a radius $\Delta_k$ and a norm $\|\cdot\|_k$. Index $k$ in the latter means that the norm might depend on the iteration. A priori, we would use the euclidean norm.
 	
