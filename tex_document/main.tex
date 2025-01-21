@@ -100,7 +100,7 @@
 		\begin{aligned}
 			\min_x \quad & f(x) \\
 			\text{s.t.} \quad & h(x)=0 \\
-			& l \le x \le u
+			& l \le x \le u,
 		\end{aligned}
 	\end{equation}
 	with the same assumptions on of differentiability of functions $f$ and \(h\). We introduce the Lagrangian associated to problem~\eqref{eq:math_prog}:
@@ -177,7 +177,7 @@
 	 
 	 \section{Augmented Lagrangian reformulation}
 	 
-	 In this section, we introduce the framework of Augmented Lagrangian-based algorithms and describe an application to our least-squares case.
+	 In this section, we introduce the framework of Augmented Lagrangian-based algorithms and describe an application in the least-squares setting of problem~\eqref{eq:model_cnls}.
 	 
 	 \subsection{Generalities}
 	 
@@ -191,15 +191,75 @@
 	 
 	 where $\lambda\in \Real^m$ is the vector of Lagrange multipliers and $\mu > 0$ is the penalty parameter.
 	 
-	 Function~\eqref{eq:al} is nothing than the Lagrangian~\eqref{eq:lagrangian} with a quadratic penalty term, hence the adjective \textit{Augmented}. The problem of interest is now
+	 Function~\eqref{eq:al} is nothing than the Lagrangian~\eqref{eq:lagrangian} with a quadratic penalty term, hence the adjective \textit{Augmented}.Assume we fixed $\lambda$ and $\mu$, the problem of interest is now the bound constrained program
 	 
-	 \begin{equation}
-	 	\label{eq:general:al}
+	 \begin{equation}\label{eq:al_nlp}
+	 	\begin{aligned}
+	 		\min_x \quad & \Phi_A(x,\lambda,\mu) \\
+	 		\text{s.t.} \quad & l \le x \le u.
+	 	\end{aligned}
 	 \end{equation}
 	 
 	 AL-based algorithms fall into the class of penalty methods that generally enable one to use iterative methods for unconstrained optimization  while steel achieving feasibility. In our case, moving the nonlinear constraints into the objective simplifies the set of constraints since only bounds constraints are left.
 	 
+	 One of the pros of AL methods is that they come naturally with an update formula for the multipliers. Let \((x_k,\lambda_k)\) be the current primal-dual iterate, then one can choose \(\lambda_{k+1} \) as
 	 
+	 \begin{equation}\label{eq:al_multipliers_update}
+	 	\lambda_{k+1} = \lambda_k + \mu_kh(x_k).
+	 \end{equation}
+	 
+	 This relation is merely derived from \(\nabla_x\Phi_A=0\) by identifying the right handside to multipliers satisfying the KKT condition \(\nabla_x \ell =0\).
+	 
+	 The procedure of an AL method is relatively simple and relies on solving successively  problem~\eqref{eq:al_nlp} with respect to the primal variable until a first order critical point of the original problem~\eqref{eq:math_prog} is found. At every iteration, the penalty parameter is increased and the multipliers are updated by formula~\eqref{eq:al_multipliers_update}. This general pattern is outlined in algorithm~\ref{algo:basic_al} and the main steps of the outer iteration are given in  algorithm~\ref{algo:outer_basic_al_trm}.
+	 
+	 	\begin{algorithm}
+	 		\caption{Basic AL algorithm for solving~\eqref{eq:math_prog}}\label{algo:basic_al}
+	 		\begin{algorithmic}
+	 			\Require Starting point $\left(x_0^s,\lambda_0\right)$, parameter $\mu_0$  parameter $\mu_0$ and tolerances $\omega_*,\omega_0,\eta_*,\eta_0$.
+	 			\Repeat
+	 			 \State Compute an approximate solution $x_{k}$ of~\eqref{eq:al_nlp} starting from \(x_k^s\) with tolerance $\omega_k$.
+	 			\If{\(\|h(x_k)\| < \eta_k\)}
+	 				\State Update iterate and increase penalty parameter.
+	 				\Else
+	 					\State Restart minimization of~\eqref{eq:al_nlp} with a higher penalty parameter.
+	 			\EndIf
+	 			\State Update tolerances
+	 			\Until{\(\|h(x_k)\| < \eta_*\) \textbf{and}  \(\|\nabla_x \ell(x_k,\lambda_k)\| < \omega_*\)}
+	 			\State Return current approximate solution.
+	 		\end{algorithmic}
+	 	\end{algorithm}
+	 	
+	 	\begin{algorithm}
+	 	\caption{Outer iteration of basic AL algorithm with trust region}\label{algo:outer_basic_al_trm}
+	 		\begin{enumerate}
+	 		\item[\textbf{Step 1: Inner Iteration}]
+	 		
+	 		Starting from $x_0^s$, approximately solve $\min_x \Phi_A(x,y_k,\mu_k)$ by computing $x_k$ such that \(\left\Vert x_k - P(x_k-\nabla_k\Phi_A)\right\Vert \le \omega_k\)
+	 		by a trust region process.
+	 		
+	 		\textbf{If} $\|h(x_k)\| \le \eta_k$, execute \textbf{Step 2}.
+	 		
+	 		Otherwise, excecute \textbf{Step 3}.
+	 		
+	 		\item[\textbf{Step 2: Iterate Update}]
+	 		
+	 		Update $y_{k+1}$ by formula~\eqref{eq:al_multipliers_update} and set $x_{k+1}^s \gets x_k $.
+	 		
+	 		Choose new tolreances \(\omega_{k+1}, \eta_{k+1}\) and new penalty parameter \(\mu_{k+1}\).
+	 		
+	 		Increment $k$ and go back to \textbf{Step 1}.
+	 		
+	 		\item[\textbf{Step 3: Adjustment of the Penalty Parameter}] 
+	 		
+	 		Choose $\mu_{k+1}$ significantly greater than $\mu_k$.
+	 		
+	 		Leave the iterate unchanged: \(\left(x_{k+1}^s,\lambda_{k+1}\right) \gets \left(x_k^s,\lambda_k\right)\).
+	 		
+	 		Go back to \textbf{Step 1}
+	 	\end{enumerate}
+	 \end{algorithm}
+	 
+	 \textbf{TODO How to compute the approximate minimizer? Projected conjugate gradient!}
 	 \subsection{Application to structured least-squares}
 	 
 	 We now consider program~\eqref{eq:model_cnls}, for which the AL function is given by
@@ -209,7 +269,7 @@
 	 	\Phi_A(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
 	 \end{equation}
 	 
-	 Contrary to formulation~\eqref{eq:al}, we keep the linear equality constraints as is and penalize the violation of the nonlinear constraints.The framework remains the same, only the computation of the projection onto the set $\calX$ shall differ.
+	 Contrary to formulation~\eqref{eq:al}, we keep the linear equality constraints as is and penalize the violation of the nonlinear constraints. Although the computation of the projection onto the set $\calX$ shall differ, the framework remains the same, 
 	 One has the following expression of the gradient: 
 	 \begin{equation}
 	 	\label{eq:al_grad}
@@ -292,6 +352,7 @@
 	 	\end{algorithmic}
 	 \end{algorithm}
 	
+
 	\clearpage
 	
 	\bibliographystyle{plainnat}
