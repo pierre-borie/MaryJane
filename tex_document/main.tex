@@ -163,17 +163,57 @@
 	 
 	 Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
 	 
-	 We now address is a quick review of the three most popular classes of approximations. For a comprehensive review of these reviews, we refer the reader to the chapter 10 of \cite{dennisschnabel:1996}.
+	 We now address is a quick review of the three most popular classes of approximations. For a comprehensive review of these methods, we refer the reader to the chapter 10 of \cite{dennisschnabel:1996}.
 	 
-	 The \textbf{Gauss--Newton} approximation sets $S(x)$ to the zero matrix. It is the cheapest to compute, since the Jacobian is necessary to evaluate the gradient and works well in practice for zero residuals problems~\cite{dennisschnabel:1996}. When solving problem~\eqref{eq:model_cnls} using an iterative method, this approximation amounts to linearizing the residuals function within the norm.
+	 \subsubsection{Gauss-Newton method}
 	 
-	 Next, the \textbf{Levengerg--Marquardt} (LM) method~\cite{levenberg:1944,marquardt:1963} sets $S(x)$ to a multiple of the identity matrix $\sigma I$ where $\sigma$ is a regularization parameter. It is still cheap to compute but only requires updating the regularization parameter throughout the iterative process. This method can be seen as the early stage of the trust region methods~\cite{conn-etal:2000}. It works well in practice on zero and small residuals problems. 
+	 Originally used by Gauss the prince himself, \textbf{Gauss--Newton} (GN) approximation sets $S(x)$ to the zero matrix. It is the cheapest to compute, since the Jacobian is necessary to evaluate the gradient and works well in practice for zero residuals problems~\cite{dennisschnabel:1996}. When solving problem~\eqref{eq:model_cnls} using an iterative method, this approximation amounts to linearizing the residuals function within the norm. Indeed, approximating $\nabla f^2(x)$ by $J(x)^TJ(x)$ in a quadratic model $\calQ$ of $f$ around $x$ gives
+	 
+	 \begin{equation}\label{eq:gn_model}
+	 	\calQ^{GN} (p) = \dfrac{1}{2}p^T\nabla f^2(x)p + \nabla f(x)^Tp =  \dfrac{1}{2} \left\Vert J(x)p+r(x) \right\Vert^2,
+	 \end{equation}
+	 
+	 which corresponds to injecting the linearization $r(x+p) \approx J(x)p+r(x)$ in the squared norm.
+	 
+	 \subsubsection{Levenberg-Marquardt}
+	 
+	 Next, we describe the \textbf{Levengerg--Marquardt} (LM) method, respectively named after the first author to publish it~\cite{levenberg:1944} and the author of its best-known rediscovery~\cite{marquardt:1963}. As noted by Marquardt in his paper, the two authors started from a different line of reasoning but came to the same conclusion. In this method, matrix $S(x)$ is set to a multiple of the identity matrix $\sigma I$ where $\sigma$ is a positive scalar. The latter is called regularization parameter, because setting  $\nabla f^2(x)$ to $J(x)^TJ(x)$ leads to the quadratic model 
+	 
+	 \begin{equation}\label{eq:lm_model}
+	 	\calQ^{LM}(p) =  \dfrac{1}{2} \left\Vert J(x)p+r(x) \right\Vert^2 + \dfrac{\sigma}{2} \|p\|^2.
+	 \end{equation}
+	 
+	 In other words, one can see very schematically that
+	 
+	\[\text{LM model} = \text{GN model} + \text{regularization term}.\]
+	
+	In practice, the LM approximation works well on zero and small residuals problems and tends to be more robust than the GN approximation. It is still cheap to compute but only requires updating the regularization parameter throughout the iterative process. This method is often referred as the early stage of the trust region methods~\cite{conn-etal:2000}. For the link with regularization methods, consider the trust region problem
+	 
+	 \begin{equation*}
+	 	\begin{aligned}
+	 		\min_x \quad & f(x) \\
+	 		\text{s.t.} \quad & \|x\| \le \Delta.
+	 	\end{aligned}
+	 \end{equation*}
+	 
+	 By applying KKT conditions and assuming that there is a minimizer $x^*$ lying on the trust region, i.e. $\|x^*\|=\Delta$, then (under strict complementarity), there is a strictly positive scalar (the multiplier) $\lambda$ such that
+	 \[\nabla f(x^*) + \dfrac{2\lambda}{\Delta}x^*=0.\]
+	 
+	 As a consequence, $x^*$ is a critical point oh the unconstrained regularized problem
+	 
+	 \[\min_x \quad f(x) + \dfrac{\delta}{2} \|x\|^2,\]
+	 
+	 where $\delta=\frac{2\lambda}{\Delta}$.
+	 
+	 Some references for LM methods: \cite{bellavia-etal:2018}
+	 
+	 \subsubsection{Quasi-Newton}
 	 
 	 Finally, one can compute an approximation of $\nabla^2f(x)$ in a similar pattern as in \textbf{quasi-Newton} methods \cite[][Chapter 6]{nocedalwright:2006} but targeted on the second order components. It has a higher computational cost than the previous two but is more accurate on large residuals problems. In~\cite{dennisetal:1981}, the authors exploit this approach in a adaptative scheme, where an estimation of the curvature is used to decide whether or not the quasi-Newton approximation is worth to use compared to the Gauss-Newton one.
 	 
 	 It is important to bear in mind that choosing between a "cheap" approximation and a quasi-Newton type one implies making compromises. Depending on the initialization, the quasi-Newton approximation will take some iterations to be good and the accuracy will not be there when most needed, i.e. at the starting point potentially far from the solution, and will match the Gauss-Newton close to the solution on small residuals problems. In other words, the quasi-Newton is not accurate enough when most needed and very accurate when a way cheaper alternative does the same job.
 	 
-	 
+	 References for quasi-Newton specialized to least-squares: \cite{dennisetal:1981,yabetakahashi}.
 	 
 	 \section{Augmented Lagrangian reformulation}
 	 
@@ -181,7 +221,7 @@
 	 
 	 \subsection{Generalities}
 	 
-	 In order to remain general, we temporarly consider the mathematical program~\eqref{eq:math_prog} and shall comeback to the least-squares shortly after. 
+	 In order to remain general, we temporarily consider the mathematical program~\eqref{eq:math_prog} and shall comeback to our beloved least-squares shortly after. 
 	 We introduce the Augmented Lagrangian (AL) function associated to program~\eqref{eq:math_prog}:
 	 
 	 \begin{equation}
@@ -208,9 +248,9 @@
 	 	\lambda_{k+1} = \lambda_k + \mu_kh(x_k).
 	 \end{equation}
 	 
-	 This relation is merely derived from \(\nabla_x\Phi_A=0\) by identifying the right handside to multipliers satisfying the KKT condition \(\nabla_x \ell =0\).
+	 This relation is merely derived from \(\nabla_x\Phi_A=0\) by identifying the right hand side of equation~\eqref{eq:al_multipliers_update} as multipliers satisfying the KKT condition \(\nabla_x \ell =0\).
 	 
-	 The procedure of an AL method is relatively simple and relies on solving successively  problem~\eqref{eq:al_nlp} with respect to the primal variable until a first order critical point of the original problem~\eqref{eq:math_prog} is found. At every iteration, the penalty parameter is increased and the multipliers are updated by formula~\eqref{eq:al_multipliers_update}. This general pattern is outlined in algorithm~\ref{algo:basic_al} and the main steps of the outer iteration are given in  algorithm~\ref{algo:outer_basic_al_trm}.
+	 The procedure of an AL method is relatively  and relies on solving successively  problem~\eqref{eq:al_nlp} with respect to the primal variable until a first order critical point of the original problem~\eqref{eq:math_prog} is found. At every iteration, the penalty parameter is increased and the multipliers are updated by formula~\eqref{eq:al_multipliers_update}. This general pattern is outlined in algorithm~\ref{algo:basic_al} and the main steps of the outer iteration are given in  algorithm~\ref{algo:outer_basic_al_trm}.
 	 
 	 	\begin{algorithm}
 	 		\caption{Basic AL algorithm for solving~\eqref{eq:math_prog}}\label{algo:basic_al}
@@ -255,7 +295,7 @@
 	 		
 	 		Leave the iterate unchanged: \(\left(x_{k+1}^s,\lambda_{k+1}\right) \gets \left(x_k^s,\lambda_k\right)\).
 	 		
-	 		Go back to \textbf{Step 1}
+	 		Go back to \textbf{Step 1}.
 	 	\end{enumerate}
 	 \end{algorithm}
 	 
