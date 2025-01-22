@@ -86,7 +86,8 @@
 	\end{equation}
 	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix. The set $\calX$ is thus convex.
 	
-	\subsection{Notations and reminders of nonlinear programming}
+	\subsection{Notations}
+	 
 	
 	The Jacobian matrix of constraints function $h$ is noted $A$.
 	
@@ -94,7 +95,13 @@
 	
 	Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
 	
-	In this section we consider the general mathematical program\footnote{Shall I write the KKT conditions w.r.t this formulation and then consider multipliers for the bounds?}
+	\subsection{Optimality conditions for nonlinear programming}
+	
+	In this section, we describe optimality conditions for nonlinear programs more general than~\eqref{eq:model_cnls} from different views.
+	
+	\subsubsection{An algebraic view}
+	
+	We consider the general mathematical program\footnote{Shall I write the KKT conditions w.r.t this formulation and then consider multipliers for the bounds?}
 	\begin{equation}
 		\label{eq:math_prog}
 		\begin{aligned}
@@ -145,6 +152,51 @@
 		If $x^*$ satisfies the second order conditions, then $x^*$ is a local minimum of~\eqref{eq:math_prog}.
 	\end{theorem}
 	
+	\subsubsection{A geometric view}
+	
+	We now consider the general program
+	
+	\begin{equation}
+		\label{eq:math_prog_geom}
+		\begin{aligned}
+			\min_x \quad & f(x) \\
+			\text{s.t.} \quad & x \in \calC,
+		\end{aligned}
+	\end{equation}
+	
+	where the feasible set $\calC$ is a (of course non empty), subset of $\RR^n$. The idea is to describe optimality conditions using inclusions of certain vectors to sets and cones. General results can be stated without any further assumptions on $\calC$. Yet, we will give important results about projections that require to assume $\calC$ is convex. As we shall see in section~\ref{sec:about_al}, our method will imply solving quadratic programs subject to linear, hence convex, constraints. Most of the content exposed is from~\cite[][Chapter 12]{nocedalwright:2006}.
+	
+	We start by defining two important sets, that are acutally cones. We remind that a set $K$ is a cone if for all $x \in K$ and $\alpha >0 $, $\alpha x\in K $. A cone is pointed if it contains $0$.
+	
+	\begin{definition}\textbf{Tangent Vector}
+		
+		Let $x\in \calC$. A vector $v\in \RR^n$ is said to be a tangent vector to $\calC$  at $x$ if there are sequences $(x_k)_k \to_\calC x$ and $(t_k)_k \searrow 0^+$ such that 
+		\[\lim\limits_{k\to \infty} \dfrac{x_k-x}{t_k}=v.\]
+	\end{definition}
+	
+	\begin{definition}
+		
+	The \textbf{tangent cone} is the set of all to $\calC$ at $x$ and is denoted by $T_\calC(x)$.
+	\end{definition}
+	
+	Intuitively, tangent vectors are all the directions going from $x$ that stay in $\calC$. In the context of constrained optimization, they characterize directions in which one can step away from $x$ while remaining feasible. 
+	
+	\begin{definition}
+		
+		The \textbf{normal cone} to $\calC$ at $x$ is the set defined by
+		\[N_\calC (x) := \left\{w \in \RR^n\ | \ \forall v \in T_\calC(x), \scal{v}{w} \le 0\right\}.\]
+	\end{definition}
+	
+	The normal cone is merely the orthogonal complement of the tangent cone and is involved in the following first order optimality condition.
+	
+	\begin{theorem}\label{theo:first_order_normal_cone}
+		
+		If $x^*$ is a local minimum of $f$, then \[-\nabla f(x^*) \in N_\calC(x^*).\]
+	\end{theorem}
+	
+	This theorem reflects the intuitive fact that a local minimum is a point from which the objective function cannot be reduced while remaining feasible. While this result is simple is elegant, its use is limited by the difficulty to express both tangent and normal cones without any other assumptions. For instance, with the LICQ, the tangent cone can be expressed as an intersection of hyperplanes depending on the constraints gradients and combining theorem~\ref{theo:first_order_normal_cone} with a Farkas-like lemma gives the KKT conditions. 
+	
+	From now on, we will assume that $\calC$ is a non empty closed convex set. 
 	\subsection{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
@@ -215,7 +267,7 @@
 	 
 	 References for quasi-Newton specialized to least-squares: \cite{dennisetal:1981,yabetakahashi}.
 	 
-	 \section{Augmented Lagrangian reformulation}
+	 \section{Augmented Lagrangian reformulation}\label{sec:about_al}
 	 
 	 In this section, we introduce the framework of Augmented Lagrangian-based algorithms and describe an application in the least-squares setting of problem~\eqref{eq:model_cnls}.
 	 
