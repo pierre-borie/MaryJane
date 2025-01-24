@@ -194,9 +194,83 @@
 		If $x^*$ is a local minimum of $f$, then \[-\nabla f(x^*) \in N_\calC(x^*).\]
 	\end{theorem}
 	
-	This theorem reflects the intuitive fact that a local minimum is a point from which the objective function cannot be reduced while remaining feasible. While this result is simple is elegant, its use is limited by the difficulty to express both tangent and normal cones without any other assumptions. For instance, with the LICQ, the tangent cone can be expressed as an intersection of hyperplanes depending on the constraints gradients and combining theorem~\ref{theo:first_order_normal_cone} with a Farkas-like lemma gives the KKT conditions. 
+	This theorem reflects the intuitive fact that a local minimum is a point from which the objective function cannot be reduced while remaining feasible. While this result is simple is elegant, its use is limited by the difficulty to express both tangent and normal cones without any other assumptions. For instance, with the LICQ, the tangent cone can be expressed as an intersection of hyperplanes depending on the constraints gradients and combining theorem~\ref{theo:first_order_normal_cone} with a Farkas-like lemma gives the KKT conditions. Similar consequences occure when the feasible set is convex, which we will assume from now on.
 	
-	From now on, we will assume that $\calC$ is a non empty closed convex set. 
+	We first remind the definition a convex set.
+	
+	\begin{definition}
+		A set $\calC\subseteq \RR^n$ is \textbf{convex} if \(\forall (x,y) \in \calC^2\) and \(\ \alpha \in [0,1] \), one has \(\alpha x+ (1-\alpha)y \in \calC\).
+		
+		In other words, the line segment between two points remains in $\calC$, for all points of $\calC$.
+	\end{definition}
+	
+	In this setting, the normal cone can be described more simply.
+	
+	\begin{proposition}\label{prop:normal_set_convex}
+		Let $\calC $ a non empty convex set. Then for all $x \in \calC$:
+		\[N_\calC (x) = \left\{v \ | \ \forall y \in \calC, \scal{v}{x-y} \ge 0\right\}.\]
+		For $x \notin \calC$, $N_\calC (x) = \emptyset$.
+	\end{proposition}
+	
+	Then, if $x^*$ is a local minima of~\eqref{eq:math_prog_geom}, the inclusion in theorem~\ref{theo:first_order_normal_cone}  becomes
+	\begin{equation}\label{eq:fo_optimality_convex_set}
+		\forall x \in \calC, \scal{\nabla f(x^*)}{x-x^*} \ge 0.
+	\end{equation}
+	
+	\textbf{Remarks on~\eqref{eq:fo_optimality_convex_set}}
+	\begin{enumerate}
+		\item This condition if sufficient when the function $f$ is convex
+		\item It also reflects the very visual fact that in $\RR^2$, the tangent at a local minima is below the curve
+	\end{enumerate}
+	
+	So we now have a more simple way to characterize a minimum but it is still not suited to be used in algorithms. Obviously, one cannot check the sign of an infinite number of inner product but more fundamently, our algorithm must be able to manipulate points that are likely to be outside of the feasible set. Using projections is the key.
+	
+	\begin{definition}\label{def:projection}
+		
+		Let $\calC \subseteq \RR^n$. The \textbf{projection operator} is the set-value mapping $P_\calC \colon \RR^n \rightrightarrows \calC $ defined by
+		\[ P_C(\bar{x}) = \argmin_{y \in \calC}  \dfrac{1}{2} \|x-y\|^2.\]
+	\end{definition}
+	
+	For this definition, we introduce the notion of set-value mapping~\cite{rockafellarwets:1998} to remain general but in the convex case, it is single valued and well defined if the concerned set is closed.. 
+	
+	\begin{theorem}
+		Let $\calC$ be a close convex set and $x \in \RR^n$. Then
+		\[\bar{x} = P_\calC(x) \iff \forall y \in \calC, \scal{\bar{x}-x}{y-\bar{x} \ge 0.}\]
+	\end{theorem}
+	
+	Since the norm is convex, this theorem is simply derived from the first order necessary optimality  conditions. Also the inequality kind of looks like the inequality in proposition~\eqref{prop:normal_set_convex}, which motivates the following theorem.
+	
+	\begin{theorem}
+		Let $\calC$ be a close convex set, $x \in \RR^n$ and $z \in \calC$. Then
+		\[z = P_\calC(x) \iff (x-z) \in \N_\calC(z).\]
+	\end{theorem}
+	
+	From this result, one decuces the following useful corollary
+	
+	\begin{corollary}
+		Let $\calC$ be a close convex set, $x \in \calC$ and $z \in \RR^n$. If $z \in N_\calC(x)$, then $\forall t\ge 0$, $P_\calC(x+tz)=x$.
+	\end{corollary}
+	
+	Applying the above corollary to opposite of the gradient of a local minimum, thus verifying theorem~\ref{theo:first_order_normal_cone},gives 
+	
+	\begin{theorem}
+	Consider the problem~\eqref{eq:math_prog_geom} where the non empty feasible set $\calC$ is closed and convex. Then $x^*$ is a local minimum if and only if for all $t \ge 0$, $P_\calC\left(x^*-t\nabla f(x^*)\right)=x^*$.
+	\end{theorem}
+	
+	There is our desired result that we shall use as a termination criteria, up to a small tolerance. In practice, we will work with the Cauchy arc defined as
+	
+	\begin{equation}\label{eq:cauchy_arc}
+		p(t,x) := P_\calC(x-t\nabla f(x)),
+	\end{equation}
+	
+	that is the path alongside the steepest descent direction. The Cauchy point is the point minimizing the objective function on the Cauchy arc, i.e.:
+	
+	\begin{equation}
+		x^C := x - t^C \nabla f(x) \text{ where } t^C = \argmin_{t \ge 0} f\left(p(t,x)\right).
+	\end{equation}
+	
+	If an algorithm uses the Cauchy point as the new iterate, then the algorithm would converge. Moreover, if each iterate reduces the objective function as much as a fraction of the Cauchy point, the the algorithm also converge. This pretty much sets the foundation, and intuition, for the theory of convergence for algorithms producing inexact solutions of the subproblems, especiallty for trust regions methods~\cite{conn-etal:2000}. It also reflects the fact that, in practice, a computer will always give us an approximation of what we truly want, which requires to be encapsulated by a theoritical framework to prove the quality of cnvergence of our beloved algorithms.
+	
 	\subsection{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
