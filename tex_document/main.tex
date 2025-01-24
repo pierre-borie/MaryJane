@@ -48,19 +48,29 @@
 %\usepackage{natbib}
 \include{macros}
 
+% For foot notes in author name
+\newcommand{\footremember}[2]{%
+	\footnote{#2}
+	\newcounter{#1}
+	\setcounter{#1}{\value{footnote}}%
+}
+\newcommand{\footrecall}[1]{%
+	\footnotemark[\value{#1}]%
+} 
+
 \begin{document}
 	
 	
 	\title{Ongoing work on MCWAL} %%%%%%%%%%%%
-	\author{Pierre Borie}
-%	\date{\today}
+	\author{Pierre Borie\footremember{1}{University of Montreal, Department of Computer Science and Operations Research, Montreal, QC, Canada}}
+	\date{}
 	
 	
 	
 	\maketitle
 	
 	\begin{abstract}
-		\noindent This informal document  reflects the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm (rapper) name is MCWAL for Moindres Carr\'es With Augmented Lagrangian.
+		\noindent This informal document deals with the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm  name is MCWAL for Moindres Carr\'es With Augmented Lagrangian. Some sections about more general aspects about nonlinear programming might also appear here and there. The aim of this document is to reflect the thinking and understanding of different kinds of notions. 
 	\end{abstract} %%%%%%%%% 
 	
 
@@ -73,7 +83,7 @@
 			\min_{x\in \RR^n} \quad & \dfrac{1}{2} \|r(x)\|^2 \\
 			\text{s.t.} \quad & h(x) = 0 \\
 			& \scal{c_i}{x} = b_i,\quad i=1,\ldots,m \\
-			& \ell \le x \le u,
+			& l \le x \le u,
 		\end{aligned}
 	\end{equation}
 	where $r\colon \RR^n \to \RR^d$  and $h\colon \RR^n \to \RR^t$ are assumed to be nonlinear, potentially non convex, continuously differentiable functions, $\scal{\cdot}{\cdot}$ is the canonical inner product and $\|\cdot\| $  its induced euclidean norm, $c_i$ are $m$  independent vectors of $\Real^n$, $( m \le n)$, $b=(b_1,\ldots,b_m)^T \in \RR^m$ and $\ell$ and $u$ are vectors in $\RR^n$. Without loss of generality, some components of the latter two vectors can be set to $\pm \infty$ for unbounded parameters. In the context of least squares problems, components $r_i$ of the function $r$ are often denoted as the residuals.
@@ -94,6 +104,8 @@
 	When considering iterative methods for solving problem~\eqref{eq:model_cnls}, $k$ will, if not mentioned otherwise, refer to the iteration number. In order to simplify notations, quantities relative to a given iteration will be noted with the iteration number as an index, such as $x_k$ for the iterate, $r_k$ for $r(x_k)$ ,$J_k$ for $J(x_k)$ etc.
 	
 	Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
+	
+	For a set $E$, a sequence $(x_k)_k$ converging to $x^* \in E$ when $k\to+\infty$, we will write $x_k \to_E x^*$ if, above a certain index, all $x_k$ are in $E$. 
 	
 	\subsection{Optimality conditions for nonlinear programming}
 	
@@ -126,7 +138,6 @@
 	
 	\begin{definition}\label{def:kkt_point}
 		\textbf{(KKT conditions)}
-		
 		A point $x^*$ satisfies the KKT conditions if $x^* $ is feasible and there exists multipliers \(\lambda^*\) such that \[\nabla_x \ell (x^*,\lambda^*)=0.\]
 	\end{definition}
 	
@@ -135,7 +146,6 @@
 	
 	\begin{theorem}\label{theo:fonc}
 		\textbf{(First Order Necessary Conditions)\cite[][Theorem 12.1]{nocedalwright:2006}}
-		
 		Let $x^*$ be a local solution of~\eqref{eq:math_prog} at which the LICQ holds. Then $x^*$ is a KKT point.
 	\end{theorem}
 	
@@ -143,7 +153,6 @@
 	
 	\begin{definition}\label{def:soc}
 		\textbf{(Second Order Conditions)}
-		
 		A point $(x^*,\lambda^*)$ satisfies the second order conditions if it is a KKT point for ~\eqref{eq:math_prog} at which the LICQ holds and if the matrix $\nabla_{xx}^2\ell(x^*,\lambda^*)$ is positive definite on the null space of the constraints Jacobian, i.e.:
 		\[\forall w \text{ verifying } \scal{A(x^*)}{w}=0,\ \scal{w}{\nabla_{xx}^2\ell(x^*,\lambda^*)w} > 0.\]
 	\end{definition}
@@ -169,17 +178,22 @@
 	We start by defining two important sets, that are acutally cones. We remind that a set $K$ is a cone if for all $x \in K$ and $\alpha >0 $, $\alpha x\in K $. A cone is pointed if it contains $0$.
 	
 	\begin{definition}\textbf{Tangent Vector}
-		
 		Let $x\in \calC$. A vector $v\in \RR^n$ is said to be a tangent vector to $\calC$  at $x$ if there are sequences $(x_k)_k \to_\calC x$ and $(t_k)_k \searrow 0^+$ such that 
 		\[\lim\limits_{k\to \infty} \dfrac{x_k-x}{t_k}=v.\]
 	\end{definition}
 	
 	\begin{definition}
 		
-	The \textbf{tangent cone} is the set of all to $\calC$ at $x$ and is denoted by $T_\calC(x)$.
+	The \textbf{tangent cone} is the set of all tangents vectors to $\calC$ at $x$ and is denoted by $T_\calC(x)$.
 	\end{definition}
 	
-	Intuitively, tangent vectors are all the directions going from $x$ that stay in $\calC$. In the context of constrained optimization, they characterize directions in which one can step away from $x$ while remaining feasible. 
+	For a better understanding, the limit in the definition can be written as the relation
+	\[x_k - x = t_kv + o(1).\]
+	Intuitively, tangent vectors are all the directions going from $x$ that stay in $\calC$, up to a scaling by a very small positive factor. In the context of constrained optimization, they characterize directions in which one can step away from $x$ while remaining feasible. 
+	
+	\textbf{Remark} 
+	
+	Rigorously, it is a $o(t_k)$ but since $t_k \to 0$, a $o(t_k)$ is also a $o(1)$. Our intent is to highlight the  visualization of a tangent vector as a scaled $x_k-x$ for $(x_k)_k \to x$.
 	
 	\begin{definition}
 		
@@ -190,17 +204,15 @@
 	The normal cone is merely the orthogonal complement of the tangent cone and is involved in the following first order optimality condition.
 	
 	\begin{theorem}\label{theo:first_order_normal_cone}
-		
 		If $x^*$ is a local minimum of $f$, then \[-\nabla f(x^*) \in N_\calC(x^*).\]
 	\end{theorem}
 	
-	This theorem reflects the intuitive fact that a local minimum is a point from which the objective function cannot be reduced while remaining feasible. While this result is simple is elegant, its use is limited by the difficulty to express both tangent and normal cones without any other assumptions. For instance, with the LICQ, the tangent cone can be expressed as an intersection of hyperplanes depending on the constraints gradients and combining theorem~\ref{theo:first_order_normal_cone} with a Farkas-like lemma gives the KKT conditions. Similar consequences occure when the feasible set is convex, which we will assume from now on.
+	This theorem reflects the intuitive fact that a local minimum is a point from which the objective function cannot be reduced while remaining feasible. While this result is simple is elegant, its use is limited by the difficulty to express both tangent and normal cones without any other assumptions. For instance, with the LICQ, the tangent cone can be expressed as an intersection of hyperplanes depending on the constraints gradients and combining theorem~\ref{theo:first_order_normal_cone} with a Farkas-like lemma gives the KKT conditions. Similar consequences occur when the feasible set is convex, which we will assume from now on.
 	
 	We first remind the definition a convex set.
 	
 	\begin{definition}
 		A set $\calC\subseteq \RR^n$ is \textbf{convex} if \(\forall (x,y) \in \calC^2\) and \(\ \alpha \in [0,1] \), one has \(\alpha x+ (1-\alpha)y \in \calC\).
-		
 		In other words, the line segment between two points remains in $\calC$, for all points of $\calC$.
 	\end{definition}
 	
@@ -220,10 +232,10 @@
 	\textbf{Remarks on~\eqref{eq:fo_optimality_convex_set}}
 	\begin{enumerate}
 		\item This condition if sufficient when the function $f$ is convex
-		\item It also reflects the very visual fact that in $\RR^2$, the tangent at a local minima is below the curve
+		\item It also reflects the very visual fact that in $\RR^2$, the line tangent to a local minima is below the curve
 	\end{enumerate}
 	
-	So we now have a more simple way to characterize a minimum but it is still not suited to be used in algorithms. Obviously, one cannot check the sign of an infinite number of inner product but more fundamently, our algorithm must be able to manipulate points that are likely to be outside of the feasible set. Using projections is the key.
+	So we now have a more simple way to characterize a minimum but it is still not suited to be used in algorithms. Obviously, one cannot check the sign of an infinite number of inner product but more fundamentally, algorithm must be able to manipulate points that are likely to be outside of the feasible set. Using projections is the key.
 	
 	\begin{definition}\label{def:projection}
 		
@@ -231,7 +243,7 @@
 		\[ P_C(\bar{x}) = \argmin_{y \in \calC}  \dfrac{1}{2} \|x-y\|^2.\]
 	\end{definition}
 	
-	For this definition, we introduce the notion of set-value mapping~\cite{rockafellarwets:1998} to remain general but in the convex case, it is single valued and well defined if the concerned set is closed.. 
+	For this definition, we introduce the notion of set-value mapping~\cite{rockafellarwets:1998} to remain general but in the convex case, it is single valued and well defined if the concerned set is closed. 
 	
 	\begin{theorem}
 		Let $\calC$ be a close convex set and $x \in \RR^n$. Then
@@ -242,16 +254,16 @@
 	
 	\begin{theorem}
 		Let $\calC$ be a close convex set, $x \in \RR^n$ and $z \in \calC$. Then
-		\[z = P_\calC(x) \iff (x-z) \in \N_\calC(z).\]
+		\[z = P_\calC(x) \iff (x-z) \in N_\calC(z).\]
 	\end{theorem}
 	
-	From this result, one decuces the following useful corollary
+	From this result, one deduces the following useful corollary.
 	
 	\begin{corollary}
 		Let $\calC$ be a close convex set, $x \in \calC$ and $z \in \RR^n$. If $z \in N_\calC(x)$, then $\forall t\ge 0$, $P_\calC(x+tz)=x$.
 	\end{corollary}
 	
-	Applying the above corollary to opposite of the gradient of a local minimum, thus verifying theorem~\ref{theo:first_order_normal_cone},gives 
+	Applying the above corollary to opposite of the gradient of a local minimum, thus verifying theorem~\ref{theo:first_order_normal_cone}, gives the next theorem.
 	
 	\begin{theorem}
 	Consider the problem~\eqref{eq:math_prog_geom} where the non empty feasible set $\calC$ is closed and convex. Then $x^*$ is a local minimum if and only if for all $t \ge 0$, $P_\calC\left(x^*-t\nabla f(x^*)\right)=x^*$.
@@ -269,7 +281,7 @@
 		x^C := x - t^C \nabla f(x) \text{ where } t^C = \argmin_{t \ge 0} f\left(p(t,x)\right).
 	\end{equation}
 	
-	If an algorithm uses the Cauchy point as the new iterate, then the algorithm would converge. Moreover, if each iterate reduces the objective function as much as a fraction of the Cauchy point, the the algorithm also converge. This pretty much sets the foundation, and intuition, for the theory of convergence for algorithms producing inexact solutions of the subproblems, especiallty for trust regions methods~\cite{conn-etal:2000}. It also reflects the fact that, in practice, a computer will always give us an approximation of what we truly want, which requires to be encapsulated by a theoritical framework to prove the quality of cnvergence of our beloved algorithms.
+	If an algorithm uses the Cauchy point as the new iterate, then the algorithm would converge. Moreover, if each iterate reduces the objective function as much as a fraction of the Cauchy point, the algorithm would also converge. This pretty much sets the foundation, and intuition, for the theory of convergence for algorithms producing inexact solutions of the sub problems, especially for trust regions methods~\cite{conn-etal:2000}. In a less formal way, it translates into a theoretical notion the practical aspect that computers are by nature inexact, because of floating-point arithmetic, and thus we are more interested into proving that "not exact but good enough" solutions will do the job. An algorithm that does not converge if solutions are not exact might be nice on paper but will not be very useful in practice.
 	
 	\subsection{Generalities on least squares}
 	 
