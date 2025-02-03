@@ -74,7 +74,7 @@
 	\end{abstract} %%%%%%%%% 
 	
 
-	\section{Introduction}\label{sec:intro}
+	\section*{Introduction}\label{sec:intro}
 	
 	We consider least squares problems subject to both nonlinear and linear constraints of the form
 	\begin{equation}
@@ -96,7 +96,7 @@
 	\end{equation}
 	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix. The set $\calX$ is thus convex.
 	
-	\subsection{Notations}
+	\subsection*{Notations}
 	 
 	
 	The Jacobian matrix of constraints function $h$ is noted $A$.
@@ -107,11 +107,11 @@
 	
 	For a set $E$, a sequence $(x_k)_k$ converging to $x^* \in E$ when $k\to+\infty$, we will write $x_k \to_E x^*$ if, above a certain index, all $x_k$ are in $E$. 
 	
-	\subsection{Optimality conditions for nonlinear programming}
+	\section{Optimality conditions for nonlinear programming}
 	
 	In this section, we describe optimality conditions for nonlinear programs more general than~\eqref{eq:model_cnls} from different views.
 	
-	\subsubsection{An algebraic view}
+	\subsection{An algebraic view}
 	
 	We consider the general mathematical program\footnote{Shall I write the KKT conditions w.r.t this formulation and then consider multipliers for the bounds?}
 	\begin{equation}
@@ -161,7 +161,7 @@
 		If $x^*$ satisfies the second order conditions, then $x^*$ is a local minimum of~\eqref{eq:math_prog}.
 	\end{theorem}
 	
-	\subsubsection{A geometric view}
+	\subsection{A geometric view}
 	
 	We now consider the general program
 	
@@ -283,7 +283,7 @@
 	
 	If an algorithm uses the Cauchy point as the new iterate, then the algorithm would converge. Moreover, if each iterate reduces the objective function as much as a fraction of the Cauchy point, the algorithm would also converge. This pretty much sets the foundation, and intuition, for the theory of convergence for algorithms producing inexact solutions of the sub problems, especially for trust regions methods~\cite{conn-etal:2000}. In a less formal way, it translates into a theoretical notion the practical aspect that computers are by nature inexact, because of floating-point arithmetic, and thus we are more interested into proving that "not exact but good enough" solutions will do the job. An algorithm that does not converge if solutions are not exact might be nice on paper but will not be very useful in practice.
 	
-	\subsection{Generalities on least squares}
+	\section{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
 	 
@@ -303,7 +303,7 @@
 	 
 	 We now address is a quick review of the three most popular classes of approximations. For a comprehensive review of these methods, we refer the reader to the chapter 10 of \cite{dennisschnabel:1996}.
 	 
-	 \subsubsection{Gauss-Newton method}
+	 \subsection{Gauss-Newton method}
 	 
 	 Originally used by Gauss the prince himself, \textbf{Gauss--Newton} (GN) approximation sets $S(x)$ to the zero matrix. It is the cheapest to compute, since the Jacobian is necessary to evaluate the gradient and works well in practice for zero residuals problems~\cite{dennisschnabel:1996}. When solving problem~\eqref{eq:model_cnls} using an iterative method, this approximation amounts to linearizing the residuals function within the norm. Indeed, approximating $\nabla f^2(x)$ by $J(x)^TJ(x)$ in a quadratic model $\calQ$ of $f$ around $x$ gives
 	 
@@ -313,7 +313,7 @@
 	 
 	 which corresponds to injecting the linearization $r(x+p) \approx J(x)p+r(x)$ in the squared norm.
 	 
-	 \subsubsection{Levenberg-Marquardt}
+	 \subsection{Levenberg-Marquardt}
 	 
 	 Next, we describe the \textbf{Levengerg--Marquardt} (LM) method, respectively named after the first author to publish it~\cite{levenberg:1944} and the author of its best-known rediscovery~\cite{marquardt:1963}. As noted by Marquardt in his paper, the two authors started from a different line of reasoning but came to the same conclusion. In this method, matrix $S(x)$ is set to a multiple of the identity matrix $\sigma I$ where $\sigma$ is a positive scalar. The latter is called regularization parameter, because setting  $\nabla f^2(x)$ to $J(x)^TJ(x)$ leads to the quadratic model 
 	 
@@ -345,7 +345,7 @@
 	 
 	 Some references for LM methods: \cite{bellavia-etal:2018}
 	 
-	 \subsubsection{Quasi-Newton}
+	 \subsection{Quasi-Newton}
 	 
 	 Finally, one can compute an approximation of $\nabla^2f(x)$ in a similar pattern as in \textbf{quasi-Newton} methods \cite[][Chapter 6]{nocedalwright:2006} but targeted on the second order components. It has a higher computational cost than the previous two but is more accurate on large residuals problems. In~\cite{dennisetal:1981}, the authors exploit this approach in a adaptative scheme, where an estimation of the curvature is used to decide whether or not the quasi-Newton approximation is worth to use compared to the Gauss-Newton one.
 	 
