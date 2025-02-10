@@ -74,7 +74,7 @@
 	\end{abstract} %%%%%%%%% 
 	
 
-	\section*{Introduction}\label{sec:intro}
+	\section{Introduction}\label{sec:intro}
 	
 	We consider least squares problems subject to both nonlinear and linear constraints of the form
 	\begin{equation}
@@ -96,7 +96,7 @@
 	\end{equation}
 	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix. The set $\calX$ is thus convex.
 	
-	\subsection*{Notations}
+	\section*{Notations}
 	 
 	
 	The Jacobian matrix of constraints function $h$ is noted $A$.
@@ -106,6 +106,8 @@
 	Symbol $:=$ shall be used to state the definition of a numerical object (function, vector etc.)
 	
 	For a set $E$, a sequence $(x_k)_k$ converging to $x^* \in E$ when $k\to+\infty$, we will write $x_k \to_E x^*$ if, above a certain index, all $x_k$ are in $E$. 
+	
+	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive.
 	
 	\section{Optimality conditions for nonlinear programming}
 	
@@ -282,6 +284,12 @@
 	\end{equation}
 	
 	If an algorithm uses the Cauchy point as the new iterate, then the algorithm would converge. Moreover, if each iterate reduces the objective function as much as a fraction of the Cauchy point, the algorithm would also converge. This pretty much sets the foundation, and intuition, for the theory of convergence for algorithms producing inexact solutions of the sub problems, especially for trust regions methods~\cite{conn-etal:2000}. In a less formal way, it translates into a theoretical notion the practical aspect that computers are by nature inexact, because of floating-point arithmetic, and thus we are more interested into proving that "not exact but good enough" solutions will do the job. An algorithm that does not converge if solutions are not exact might be nice on paper but will not be very useful in practice.
+	
+	\section{The conjugate gradient method}
+	
+	In this section, we describe a very popular iterative method in optimization, the conjugate gradient method. We will try to give a comprehensive review and intuitive view of the method and its main characteristics. 
+	
+	Let $H \succ 0$, .
 	
 	\section{Generalities on least squares}
 	 
