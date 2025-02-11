@@ -107,7 +107,11 @@
 	
 	For a set $E$, a sequence $(x_k)_k$ converging to $x^* \in E$ when $k\to+\infty$, we will write $x_k \to_E x^*$ if, above a certain index, all $x_k$ are in $E$. 
 	
-	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive.
+	$\calM_{m,n}(\bbK)$ denotes the set of matrices with $m$ rows and $n$ columns whose coefficients are in the field $\bbK = \RR or \CC$. In practice, it will always be $\RR$ and would be surprising to consider the complex case but one never knows. When $m=n$, i.e. for square matrices, we will write $\calM_n(\bbK)$. The adjoint of a matrix $A\in \calM_{m,n}(\bbK)$ is written $A^*$. In the real case, it corresponds to its transpose, in the complex case, it corresponds to the tranpose if its conjugate. 
+	
+	We also introduce notations for special subsets of matrices. $GL_n(\bbK)$, also known as the linear group of order $n$, denotes the set of invertible matrices (or "non-singular"...). $O(n)$ is the orthogonal group, i.e. the set of matrices $Q$ in $\calM_n(\RR)$ such that $Q^TQ=I_n$. $\calS_n(\bbK)$ denotes the set of matrices equal to their adjoint. In the real case, such matrices are called symmetric, in the complex case, they are called hermitian.  
+	
+	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive. In the case $H\succ 0$, the bilinear mapping $\scal{\cdot}{\cdot}_H:(x,y) \mapsto \scal{x}{Hy} $ forms an inner product of induced norm $\|\cdot\|_H:x\mapsto \sqrt{\scal{x}{Hx}}$.
 	
 	\section{Optimality conditions for nonlinear programming}
 	
@@ -242,7 +246,7 @@
 	\begin{definition}\label{def:projection}
 		
 		Let $\calC \subseteq \RR^n$. The \textbf{projection operator} is the set-value mapping $P_\calC \colon \RR^n \rightrightarrows \calC $ defined by
-		\[ P_C(\bar{x}) = \argmin_{y \in \calC}  \dfrac{1}{2} \|x-y\|^2.\]
+		\[ P_C(\bar{x}) = \argmin_{y \in \calC}  \dfrac{1}{2} \|\bar{x}-y\|^2.\]
 	\end{definition}
 	
 	For this definition, we introduce the notion of set-value mapping~\cite{rockafellarwets:1998} to remain general but in the convex case, it is single valued and well defined if the concerned set is closed. 
@@ -287,9 +291,100 @@
 	
 	\section{The conjugate gradient method}
 	
-	In this section, we describe a very popular iterative method in optimization, the conjugate gradient method. We will try to give a comprehensive review and intuitive view of the method and its main characteristics. 
+	In this section, we describe a very popular iterative method in optimization, the conjugate gradient (CG) method. We will try to give a comprehensive review and intuitive view of the method and its main characteristics. 
 	
-	Let $H \succ 0$, .
+	Let $H \in \calS_n(\RR)$ such that $H \succ 0$, $c \in \RR^n$ and consider the quadratic program (QP)
+	
+	\begin{equation}\label{eq:unconstr_qp}
+		\min_x \ q(x) = \dfrac{1}{2} \scal{x}{Hx} - \scal{c}{x}.
+	\end{equation}
+	
+	This formulation will often occur in our case when we will formulate sub-problems from a quadratic model of the objective function.
+	
+	
+	By positive-definiteness of $H$, program~\eqref{eq:unconstr_qp} is convex and thus has a unique minimizer $x^*$ verifying $\nabla q(x^*)=0$, i.e.
+	\begin{equation}\label{eq:qp_linear_syst}
+		Hx^* = c.
+	\end{equation}
+	Solving a convex QP is then equivalent to solving a symmetric linear system. The question is now how to solve it? A first approach could be to factorize $H$ to transform system~\eqref{eq:qp_linear_syst} into linear systems easier to solve, by using the Cholesky factorization or the QR decomposition for instance. See~\cite{golubvanloan:2013} for details on how to compute them. Using such direct methods can  still be prohibitive in computations and storage\footnote{Expand this paragraph to tell how exact methods can have issues}. The conjugate gradient method has the advantage to be iterative, to only require matrix-vector products and converges in at most, $n$ iterations. Before describing the principle of the method, we will introduce the notion of conjugate vectors w.r.t a symmetric matrix.
+	
+	\begin{definition}\label{def:conjugate_vectors}
+		Let $H \succ 0$. Two vectors $u$ and $v$ are said to be $H$-conjugate if $\scal{u}{Hv}=0$.
+	\end{definition} 
+	
+	Visually, two $H$-conjugate vectors are orthogonal in the space obtained obtained after applying $H$ to $\RR^n$. This definition naturally extends to a set of vectors $(p_i)_{i\in I}$ who are said to be $H$-conjugate if $\scal{p_i}{Hp_j}=0$ for all $(i,j) \in I^2$ such that $i\neq j$. If the matrix $H$ is implicit, we will just say "conjugate". 
+	
+	An interesting fact is that $k\le n$ conjugate vectors are also linearly independent. Thus, a set of $n$ conjugate vectors form a basis of $\RR^n$. Let's say that we initiate our iterative process from a given $x_0$ from which we seek to compute our solution $x^*$. If $(p_0,\ldots,p_{n-1})$ is a set of conjugate vectors, then there are scalars $(\alpha_0,\ldots,\alpha_{n-1})$ such that
+	\[ x^*-x_0 = \sum_{i=0}^{n-1} \alpha_i p_i.\]
+	
+	Using the conjugacy property, one can find that the scalars are actually determined by the relation
+	
+	\[ \alpha_k = \dfrac{\scal{p_k}{H(x^*-x_0)}}{\scal{p_k}{Hp_k}}.\]
+	
+	The problem is that this relation depends on the solution that we are actually looking for and do not have access to\footnote{if we did, why solving the problem?}. However, this issue can be solved by introducing, for $k\ge 1$, the intermediates iterates 
+	
+	\[ x_k = x_0 + \sum_{i=0}^{k-1} \alpha_i p_i.\]
+	
+	The scalars can now be expressed
+	
+	\begin{equation}\label{eq:cg_steplength_1st_version}
+		\alpha_k = -\dfrac{\scal{p_k}{r_k}}{\scal{p_k}{Hp_k}},
+	\end{equation}
+	
+	where $r_k := Hx_k - c$ is the $k$-th residual. By the iterative relation $x_{k} = x_{k-1}+\alpha_{k-1}p_{k-1}$, one also has $r_{k}=r_{k-1} + \alpha_{k-1}Hp_{k-1}$.
+	
+	The latter relation can also be derived from performing a linesearch along the direction $p_k$ by computing $\alpha_k = \argmin_\alpha q(x_k + \alpha p_k)$. Since $q$ is quadratic, there is an explicit formula that also gives the relation~\eqref{eq:cg_steplength_1st_version}. Yet, we prefer to view this process as an iterative decomposition of the vector $x^*-x_0$ onto a basis of conjugate vectors. For instance, it is trivial that this process converges in $n$ iterations because each iteration consists in computing a coefficient of the decomposition. 
+	
+	In any case, the coefficients can now be computed recursively, provided we have access to conjugate directions, which is not a trivial question. If one knows its linear algebra classics, since $H$ is symmetric, by the spectral theorem, there is an orthonormal basis of eigen vectors into which $H$ is diagonal. With such vectors, the conjugacy property is clearly satisfied so this basis could do the job. The problem is that diagonalizing a matrix is a very expensive process on its own that could even exceed the cost of a relevant factorization of $H$. 
+	
+	Also note that having a base diagonalizing $H$ is stronger than what we actually need. Indeed, using matrix notations, let $P$ be the matrix whose columns are simply conjugate vectors $p_1,\ldots,p_n$ and $G \in O(n)$ such that $H=GDG^T$ for some diagonal matrix $D$. Then, because $G^TG=I_n$, one has $G^THG=D$, whereas definition~\ref{def:conjugate_vectors} simply implies that $P^THP$ is diagonal. The latter is weaker, because there is absolutely no reasons for $P$ to be in $O(n)$. Of course, $P$ is invertible but its inverse is not necessarily its transpose. 
+	
+	Another method would be to apply the Gram-Schmidt orthonormalization process to a set of given vectors. It would work but would still require storing all the vectors, which is less suited for large-scale applications. 
+	
+	Fortunately, there is a way to produce each direction iteratively in such a way that only accessible information about the problem and the previous basis vector are required to compute a new basis vector. The initial information will consist of the residuals $r_k$. Let $x_0$ be our starting point, $r_0=Hx_0-c$. For $k\ge 1$, every new basis vector is defined by
+	
+	\[p_k = -r_k + \beta_{k-1} p_{k-1}\]
+	
+	where $\beta_{k-1}$ is a conjugacy parameter whose expression can be derived from imposing $\scal{p_{k-1}}{Hp_k}=0$ and injecting the above expression:
+	
+	\[ \beta_{k-1} = \dfrac{\scal{p_{k-1}}{Hr_k}}{\scal{p_{k-1}}{Hp_{k-1}}}.\]
+	
+	Combined with the recursion previously described, this process respects our conditions to only require accessible information about the previous iteration and ensures the following properties:
+	\begin{itemize}
+		\item $\forall i<j,\ \scal{r_i}{r_j}=0$
+		\item $\forall i\neq j,\ \scal{p_i}{Hp_j}=0$ ($H$-conjugacy).
+		\item $\forall k,\ span(r_0,\ldots,r_k) = span(p_0,\ldots,p_k) = span(r_0,Hr_0,\ldots,H^{k-1}r_0)$
+	\end{itemize}
+	
+	The space $span(r_0,Hr_0,\ldots,H^{k-1}r_0)$ is the Krylov subspace of degree $k$, generally written $\calK(H,r_0,k)$, is a the foundation of a category of iterative methods called Krylov methods, of which the CG method is a special instance. 
+	
+	Before describing the an algorithm, some relations can be modified such that the computations are even more efficient. First, with the conjugacy recursion, one has $\scal{p_k}{r_k} = - \|r_k\|^2$, leading to 
+	
+	\[\alpha_k = \dfrac{\|r_k\|^2}{\scal{p_k}{Hp_k}}.\]
+	
+	Similarly, the conjugacy parameter is also equal to 
+	
+	\[\beta_k = \dfrac{\|r_{k+1}\|^2}{\|r_k\|^2}.\]
+	
+	The CG method is stated in algorithm~\ref{algo:cg_method}.
+	
+	\begin{algorithm}
+		\caption{The conjugate gradient method}\label{algo:cg_method}
+		\begin{algorithmic}
+			\Require Starting point $x_0$
+			\State $r_0 \gets Hx_0-c$ and $p_0 \gets -r_0$
+			\For{$k=0,\ldots,n-2$ \textbf{or} until convergence}
+				\State $\alpha_k \gets \frac{\|r_k\|^2}{\|p_k\|^2_H}$
+				\State $x_{k+1} \gets x_k+\alpha_kp_k$
+				\State $r_{k+1} \gets r_k + \alpha_kHp_k$
+				\State $\beta_k =  \frac{\|r_{k+1}\|^2}{\|r_k\|^2}$
+				\State $p_{k+1} \gets -r_{k+1}+\beta_kp_k$
+			\EndFor{}
+			\Return $x_k$
+		\end{algorithmic}
+	\end{algorithm} 
+	
+	
 	
 	\section{Generalities on least squares}
 	 
