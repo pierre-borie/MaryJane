@@ -68,6 +68,7 @@
 	
 	
 	\maketitle
+	\tableofcontents
 	
 	\begin{abstract}
 		\noindent This informal document deals with the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm  name is MCWAL for Moindres Carr\'es With Augmented Lagrangian. Some sections about more general aspects about nonlinear programming might also appear here and there. The aim of this document is to reflect the thinking and understanding of different kinds of notions. 
@@ -107,11 +108,14 @@
 	
 	For a set $E$, a sequence $(x_k)_k$ converging to $x^* \in E$ when $k\to+\infty$, we will write $x_k \to_E x^*$ if, above a certain index, all $x_k$ are in $E$. 
 	
-	$\calM_{m,n}(\bbK)$ denotes the set of matrices with $m$ rows and $n$ columns whose coefficients are in the field $\bbK = \RR or \CC$. In practice, it will always be $\RR$ and would be surprising to consider the complex case but one never knows. When $m=n$, i.e. for square matrices, we will write $\calM_n(\bbK)$. The adjoint of a matrix $A\in \calM_{m,n}(\bbK)$ is written $A^*$. In the real case, it corresponds to its transpose, in the complex case, it corresponds to the tranpose if its conjugate. 
+	The set of linear combinations of a set of vectors $(v_1,\ldots,v_n)$ is written $\rangle$ $span(v_1,\ldots,v_n)$. 
+	
+	$\calM_{m,n}(\bbK)$ denotes the set of matrices with $m$ rows and $n$ columns whose coefficients are in the field $\bbK = \RR$ or $\CC$. In practice, it will always be $\RR$ and would be surprising to consider the complex case but one never knows. When $m=n$, i.e. for square matrices, we will write $\calM_n(\bbK)$. The adjoint of a matrix $A\in \calM_{m,n}(\bbK)$ is written $A^*$. In the real case, it corresponds to its transpose, in the complex case, it corresponds to the tranpose if its conjugate. 
 	
 	We also introduce notations for special subsets of matrices. $GL_n(\bbK)$, also known as the linear group of order $n$, denotes the set of invertible matrices (or "non-singular"...). $O(n)$ is the orthogonal group, i.e. the set of matrices $Q$ in $\calM_n(\RR)$ such that $Q^TQ=I_n$. $\calS_n(\bbK)$ denotes the set of matrices equal to their adjoint. In the real case, such matrices are called symmetric, in the complex case, they are called hermitian.  
 	
 	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive. In the case $H\succ 0$, the bilinear mapping $\scal{\cdot}{\cdot}_H:(x,y) \mapsto \scal{x}{Hy} $ forms an inner product of induced norm $\|\cdot\|_H:x\mapsto \sqrt{\scal{x}{Hx}}$.
+	
 	
 	\section{Optimality conditions for nonlinear programming}
 	
@@ -293,6 +297,8 @@
 	
 	In this section, we describe a very popular iterative method in optimization, the conjugate gradient (CG) method. We will try to give a comprehensive review and intuitive view of the method and its main characteristics. 
 	
+	\subsection{The main algorithm}
+	
 	Let $H \in \calS_n(\RR)$ such that $H \succ 0$, $c \in \RR^n$ and consider the quadratic program (QP)
 	
 	\begin{equation}\label{eq:unconstr_qp}
@@ -370,6 +376,7 @@
 	
 	\begin{algorithm}
 		\caption{The conjugate gradient method}\label{algo:cg_method}
+		  
 		\begin{algorithmic}
 			\Require Starting point $x_0$
 			\State $r_0 \gets Hx_0-c$ and $p_0 \gets -r_0$
@@ -384,7 +391,17 @@
 		\end{algorithmic}
 	\end{algorithm} 
 	
-	
+	 One can observe that each iteration only requires one matrix-vector product and inner products, making this method very efficient for large scale applications. To expand an earlier remark, the CG method belongs to the class of Krylov methods who consist in an iterative process for which, starting from $x_0$, each iterate is a minimizer of the objective function over a subspace of the form $\calK(H,r_0,k)$, also called a Krylov subspace. We have only seen an application for square symmetric systems but the theory extend to rectangular and indefinite systems.\footnote{TODO: add a reference to some Krylov methods}
+	 
+	 As we already said, the CG method converges in at most $n$ iterations, but the efficiency of the method is highly related to the eigen values distributions of the matrix.
+	 
+	 \begin{proposition}
+	 	Let $H\in \calS_n^{++}(\RR)$ such that $H$ has $r<n$ distinct eigen values, then algorithm~\ref{algo:cg_method} applied to problem~\eqref{eq:unconstr_qp} converges in $r$ iterations. 
+	 \end{proposition}
+	 
+	 In a similar fashion, if matrix $H$ has clustered eigen values, then the CG method will give a very good solution in a few iterations (as much as they are clusters). Then, by a change of coordinates, we could transform the linear system to get a matrix with clustered eigen values, which would lead to an acceleration of the efficiency of the method. This is the principle of preconditioning, that we will now discuss about.
+	 
+	 \subsection{Preconditioning}
 	
 	\section{Generalities on least squares}
 	 
