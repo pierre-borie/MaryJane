@@ -108,13 +108,13 @@
 	
 	The set of linear combinations of a set of vectors $(v_1,\ldots,v_n)$ is written $\rangle$ $span(v_1,\ldots,v_n)$. 
 	
-	$\calM_{m,n}(\bbK)$ denotes the set of matrices with $m$ rows and $n$ columns whose coefficients are in the field $\bbK = \RR$ or $\CC$. In practice, it will always be $\RR$ and would be surprising to consider the complex case but one never knows. When $m=n$, i.e. for square matrices, we will write $\calM_n(\bbK)$. The adjoint of a matrix $A\in \calM_{m,n}(\bbK)$ is written $A^*$. In the real case, it corresponds to its transpose, in the complex case, it corresponds to the tranpose if its conjugate. 
+	$\calM_{m,n}(\bbK)$ denotes the set of matrices with $m$ rows and $n$ columns whose coefficients are in the field $\bbK = \RR$ or $\CC$. In practice, the field $\bbK$ will always be $\RR$ and it would be surprising to consider the complex case but one never knows. When $m=n$, i.e. for square matrices, we will write $\calM_n(\bbK)$. The space of one columns matrices $\calM_{n,1}$ shall be identified with $\bbK^n$.. The adjoint of a matrix $A\in \calM_{m,n}(\bbK)$ is written $A^*$. In the real case, it corresponds to its transpose, in the complex case, it corresponds to the transpose of its conjugate. 
 	
 	We also introduce notations for special subsets of matrices. $GL_n(\bbK)$, also known as the linear group of order $n$, denotes the set of invertible matrices (or "non-singular"...). $O(n)$ is the orthogonal group, i.e. the set of matrices $Q$ in $\calM_n(\RR)$ such that $Q^TQ=I_n$. $\calS_n(\bbK)$ denotes the set of matrices equal to their adjoint. In the real case, such matrices are called symmetric, in the complex case, they are called hermitian.  
 	
 	The condition number of a matrix $A\in \calM_n(\bbR)$, given by $\|A\|\ \|A^{-1}\|$ will be noted $\kappa(A)$. 
 	
-	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive. In the case $H\succ 0$, the bilinear mapping $\scal{\cdot}{\cdot}_H:(x,y) \mapsto \scal{x}{Hy} $ forms an inner product of induced norm $\|\cdot\|_H:x\mapsto \sqrt{\scal{x}{Hx}}$.
+	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive. In the case $H\succ 0$, the bilinear mapping $\scal{\cdot}{\cdot}_H:(x,y) \mapsto \scal{x}{Hy} $ forms an inner product on $\RR^n$ of induced norm $\|\cdot\|_H:x\mapsto \sqrt{\scal{x}{Hx}}$.
 	
 	
 	\section{Optimality conditions for nonlinear programming}
@@ -417,15 +417,15 @@
 	 
 	 One could directly apply algorithm~\ref{algo:cg_method} to system~\eqref{eq:cg_preconditioned_system}, to get the solution $\bar{x}^*$ and then back transform to obtain the solution of the original problem $x^*=R^{-1}\bar{x}^*$. On paper this works but it has the disadvantage to require an explicit computation of $\bar{H}$, which we do not want in practice. Forming this matrix matrix could, for instance, ruin the sparsity pattern of the original matrix $H$. We would prefer to formulate an method where iterates are manipulated implicitly by using their expressions w.r.t. the original variables. 
 	 
-	 Insteas of the matrix $R$, we shall use the matrix $M=R^TR$ that naturally appears when applying CG to system~\eqref{eq:cg_preconditioned_system}. In general, this is the matrix we refer to as the preconditioner, by implicitly imposing it has the suitable format and properties. The Preconditioned Conjugate Gradient (PCG) method is outlined in algorithm~\ref{algo:pcg_method}.
+	 Instead of the matrix $R$, we shall use the matrix $M=R^TR$ that naturally appears when applying CG to system~\eqref{eq:cg_preconditioned_system}. In general, this is the matrix we refer to as the preconditioner, by implicitly imposing it has the suitable format and properties. The Preconditioned Conjugate Gradient (PCG) method is outlined in algorithm~\ref{algo:pcg_method}.
 	 
 	 \begin{algorithm}
 	 	\caption{The preconditioned conjugate gradient method}\label{algo:pcg_method}
 	 	\begin{algorithmic}
 	 		\Require Starting point $x_0$
-	 		\State $r_0 \gets Hx_0-c$, $v_0\gets M^{-1}$ $p_0 \gets -v_0$
+	 		\State $r_0 \gets Hx_0-c$, $v_0\gets M^{-1}r_0$ and $p_0 \gets -v_0$
 	 		\For{$k=0,\ldots,n-2$ \textbf{or} until convergence}
-	 		\State $\alpha_k \gets \frac{\scal{r_k}{v_k}}{\|p_k\|^2_H}$
+	 		\State $\alpha_k \gets \frac{\scal{r_k}{v_k}}{\scal{p_k}{Hp_k}}$
 	 		\State $x_{k+1} \gets x_k+\alpha_kp_k$
 	 		\State $r_{k+1} \gets r_k + \alpha_kHp_k$
 	 		\State $v_{k+1}\gets M^{-1}r_{k+1}$
@@ -461,9 +461,95 @@
 	 \begin{equation}\label{eq:qp_linear_constraints}
 	 	\begin{aligned}
 	 		\min_x & \quad \dfrac{1}{2} \scal{x}{Hx} - \scal{c}{x} \\
-	 	\text{s.t.}	& \quad Ax=b.
+	 	\text{s.t.}	& \quad Ax=b,
 	 	\end{aligned}
 	 \end{equation}
+	 
+	 where $A \in \calM_{m,n}(\RR)$, $m\le n$. We still have $H\succ 0$ for the convexity and we assume $A$ is of rank $m$ such that the system $Ax=b$ has, at least, one solution for any $b\in\RR^m$. 
+	 
+	 The idea of the projected CG is to reformulate problem~\eqref{eq:qp_linear_constraints} as an unconstrained problem whose solution will automatically satisfy the constraints. For simplicity and to emphasize on the important ideas of method, we will first consider the case $b=0_{\RR^m}$. Our solution thus lies in the null space of $A$. Remind that $A$ has rank $m$, thus, there exists a matrix $N\in \calM_{n,n-m}(\RR)$ whose columns span the null space of $A$, i.e. $AN=0$. Then, for any $x$ such that $Ax=0$, there is a unique $x^N \in \RR^{n-m}$ such that $x = Nx^N$. If we consider points of this form, the constraints $Ax=0$ are automatically satisfied. Therefore, solving~\eqref{eq:qp_linear_constraints} is equivalent to first solving the unconstrained QP
+	  \begin{equation}\label{eq:qp_null_space}
+	 		\min_{x^N} q^N(x^N) = \dfrac{1}{2} \scal{x^N}{H^Nx^N} - \scal{c^N}{x^N}
+	 \end{equation}
+	 where $q^N(x^N) := q(Nx^N)$ (giving $H^N:=N^THN$ and $c^N:=N^Tc$), and then multiply by $N$ to get the desired solution. Tis would make sense only if $H^N \succ 0$, which we will assume.
+	 
+	 Projected CG consists into applying the CG method, or the preconditioned version, to problem~\eqref{eq:qp_null_space}.	As for the PCG, algorithm, we prefer to express the iterations in terms of the original variable $x$ and implicitly update the variable $x^N$. This procedure is outlined in algorithm~\ref{algo:projected_pcg_method} and makes use of a preconditioner $M^N$ for $H^N$.
+	 
+	 \begin{algorithm}
+	 	\caption{The projected preconditioned conjugate gradient method (preliminary)}\label{algo:preliminary_projected_pcg_method}
+	 	\begin{algorithmic}
+	 		\Require Starting point $x_0$ verifying $Ax_0=0$
+	 		\State $r_0 \gets Hx_0-c$, $v_0\gets N^T(M^N)^{-1}N^Tr_0$ and $p_0 \gets -v_0$
+	 		\For{$k=0,\ldots,n-2$ \textbf{or} until convergence}
+	 		\State $\alpha_k \gets \frac{\scal{r_k}{v_k}}{\scal{p_k}{Hp_k}}$
+	 			\State $x_{k+1} \gets x_k+\alpha_kp_k$
+	 			\State $r_{k+1} \gets r_k + \alpha_kHp_k$
+	 			\State $v_{k+1}\gets N{(M^N)}^{-1}N^Tr_{k+1}$
+	 			\State $\beta_k =  \frac{\scal{r_{k+1}}{v_{k+1}}}{\scal{r_k}{v_k}}$
+	 			\State $p_{k+1} \gets -v_{k+1}+\beta_kp_k$
+	 			\EndFor{}
+	 			\Return $x_k$
+	 		\end{algorithmic}
+	 	\end{algorithm} 
+	 
+	In the projected CG, the extra cost arises from the extra computation of $v_{k+1}= N{(M^N)}^{-1}N^Tr_{k}$. Which, on paper, requires to explicitly form the matrix $N$. We can actually bypass this by rewriting the latter system in an augmented form involving only known quantities. Before that, we shall detail the structure of the preconditioner $M^N$. Since the ideal choice would be $N^THN$, this motivates that $M^N$ should approximate $H^N$ or, equivalently, that $M^N$ has the form 
+	\[M^N=N^TMN,\]
+	where $M$ is a preconditioner approximating $H$. The system previously discussed now becomes
+	 \[v_k = N(N^TMN)^{-1}N^Tr_k\]
+	 which does not look more appealing at first glance but is actually is because $P := N(N^TMN)^{-1}N^T$ is a projection matrix. Hence, the properties of projection enable one to compute a matrix vector product involving $P$ through equivalent systems of, maybe, higher dimension, but that preserve the structure of the problem and do not require to form the matrix $P$. For instance, when $M=I$, $P$ is the orthogonal projection onto the null space of $A$ and verifies
+	 \[P = I-A^T(AA^T)^{-1}A.\]
+	 Therefore, computing $v=Pr$ is equivalent to solving normal equations or the augmented system
+	 \[\begin{pmatrix}
+	 	I & A^T \\
+	 	A & 0
+	 \end{pmatrix} \begin{pmatrix}
+	 v \\ w 
+	 \end{pmatrix} = \begin{pmatrix}
+	 r \\ 0
+	 \end{pmatrix},\]
+	 
+	 with the addition of an auxiliary variable $w$. A different choice of $H$ would lead to the similar system
+	 \begin{equation}\label{eq:augmented_system_pcg}
+	 	\begin{pmatrix}
+	 	H & A^T \\
+	 	A & 0
+	 \end{pmatrix} \begin{pmatrix}
+	 	v \\ w 
+	 \end{pmatrix} = \begin{pmatrix}
+	 	r \\ 0
+	 \end{pmatrix}.
+	 \end{equation}
+	 
+	 Choosing one approach or the other will depend on the structure of the problem, the predoncitioner, the access to a factorization of the augmented matrix, etc. The important thing to remember from this discussion is that we do not need to explicitly form the null space matrix $N$.
+	 
+	 For the case $b\neq 0$, the only difference will be the initialization. Any vector $x$ can be composed into the sum of two components
+	 \begin{equation}\label{eq:range_null_space_decomp}
+	 	x = x^R + Nx^N,
+	 \end{equation}
+	 where $N$ is the null space matrix of $A$ as before and $x^R$ satisfies $Ax^R=b$. It is the direct sum structure (special solution) + (element of null space). 
+	 
+	 Such an $x^R$ can be computed by solving the normal equations 
+	 \[A^T(AA^T)^{-1}b,\] 
+	 or an augmented system similar to~\eqref{eq:augmented_system_pcg}. With fixed $x^R$, one can substitute~\eqref{eq:range_null_space_decomp} into~\eqref{eq:qp_linear_constraints}. Any point of the form~\eqref{eq:range_null_space_decomp} satisfies the constraints, thus one can remove them and retrieve, as earlier, an unconstrained QP expressed in terms of $x^N$ also involving the reduced Hessian $N^THN$. Only the right hand side $c^N$ will differ.
+	 
+	 The discussion and strategies about preconditioning are not affected. The only difference with algorithm~\eqref{algo:preliminary_projected_pcg_method} is that we require the initial point to satisfy $Ax=b$. To lighten the notations, we will use the projector preconditioner $P= N(N^TMN)^{-1}N^T$ where $M$ is a preconditioner for $H$. The full procedure of the Projected CG method is outlined in algorithm~\ref{algo:projected_pcg_method} 
+	 
+	 \begin{algorithm}
+	 	\caption{The projected preconditioned conjugate gradient method}\label{algo:projected_pcg_method}
+	 	\begin{algorithmic}
+	 		\Require Starting point $x_0$ verifying $Ax_0=b$
+	 		\State $r_0 \gets Hx_0-c$, $v_0\gets Pr_0$ and $p_0 \gets -v_0$
+	 		\For{$k=0,\ldots,n-2$ \textbf{or} until convergence}
+	 		\State $\alpha_k \gets \frac{\scal{r_k}{v_k}}{\scal{p_k}{Hp_k}}$
+	 		\State $x_{k+1} \gets x_k+\alpha_kp_k$
+	 		\State $r_{k+1} \gets r_k + \alpha_kHp_k$
+	 		\State $v_{k+1}\gets Pr_{k+1}$
+	 		\State $\beta_k =  \frac{\scal{r_{k+1}}{v_{k+1}}}{\scal{r_k}{v_k}}$
+	 		\State $p_{k+1} \gets -v_{k+1}+\beta_kp_k$
+	 		\EndFor{}
+	 		\Return $x_k$
+	 	\end{algorithmic}
+	 \end{algorithm} 
 	\section{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
@@ -482,7 +568,7 @@
 	 
 	 We now address is a quick review of the three most popular classes of approximations. For a comprehensive review of these methods, we refer the reader to the chapter 10 of \cite{dennisschnabel:1996}.
 	 
-	 \subsection{Gauss-Newton method}
+	 \subsection{Gauss--Newton method}
 	 
 	 Originally used by Gauss the prince himself, \textbf{Gauss--Newton} (GN) approximation sets $S(x)$ to the zero matrix. It is the cheapest to compute, since the Jacobian is necessary to evaluate the gradient and works well in practice for zero residuals problems~\cite{dennisschnabel:1996}. When solving problem~\eqref{eq:model_cnls} using an iterative method, this approximation amounts to linearizing the residuals function within the norm. Indeed, approximating $\nabla f^2(x)$ by $J(x)^TJ(x)$ in a quadratic model $\calQ$ of $f$ around $x$ gives
 	 
@@ -492,7 +578,7 @@
 	 
 	 which corresponds to injecting the linearization $r(x+p) \approx J(x)p+r(x)$ in the squared norm.
 	 
-	 \subsection{Levenberg-Marquardt}
+	 \subsection{Levenberg--Marquardt}
 	 
 	 Next, we describe the \textbf{Levengerg--Marquardt} (LM) method, respectively named after the first author to publish it~\cite{levenberg:1944} and the author of its best-known rediscovery~\cite{marquardt:1963}. As noted by Marquardt in his paper, the two authors started from a different line of reasoning but came to the same conclusion. In this method, matrix $S(x)$ is set to a multiple of the identity matrix $\sigma I$ where $\sigma$ is a positive scalar. The latter is called regularization parameter, because setting  $\nabla f^2(x)$ to $J(x)^TJ(x)$ leads to the quadratic model 
 	 
@@ -524,13 +610,13 @@
 	 
 	 Some references for LM methods: \cite{bellavia-etal:2018}
 	 
-	 \subsection{Quasi-Newton}
+	 \subsection{Quasi--Newton}
 	 
 	 Finally, one can compute an approximation of $\nabla^2f(x)$ in a similar pattern as in \textbf{quasi-Newton} methods \cite[][Chapter 6]{nocedalwright:2006} but targeted on the second order components. It has a higher computational cost than the previous two but is more accurate on large residuals problems. In~\cite{dennisetal:1981}, the authors exploit this approach in a adaptative scheme, where an estimation of the curvature is used to decide whether or not the quasi-Newton approximation is worth to use compared to the Gauss-Newton one.
 	 
 	 It is important to bear in mind that choosing between a "cheap" approximation and a quasi-Newton type one implies making compromises. Depending on the initialization, the quasi-Newton approximation will take some iterations to be good and the accuracy will not be there when most needed, i.e. at the starting point potentially far from the solution, and will match the Gauss-Newton close to the solution on small residuals problems. In other words, the quasi-Newton is not accurate enough when most needed and very accurate when a way cheaper alternative does the same job.
 	 
-	 References for quasi-Newton specialized to least-squares: \cite{dennisetal:1981,yabetakahashi}.
+	 References for quasi--Newton specialized to least-squares: \cite{dennisetal:1981,yabetakahashi}.
 	 
 	 \section{Augmented Lagrangian reformulation}\label{sec:about_al}
 	 
