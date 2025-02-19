@@ -117,7 +117,7 @@
 	If $H$ is a symmetric matrix, i.e. $H^T=H$, we will write $H \succ 0$, resp. $H \succeq 0$, when $H$ is positive definite, resp. semi-definite positive. In the case $H\succ 0$, the bilinear mapping $\scal{\cdot}{\cdot}_H:(x,y) \mapsto \scal{x}{Hy} $ forms an inner product on $\RR^n$ of induced norm $\|\cdot\|_H:x\mapsto \sqrt{\scal{x}{Hx}}$.
 	
 	
-	\section{Optimality conditions for nonlinear programming}
+	\section{Optimality conditions for nonlinear programming}\label{sec:nlp_optimality_conditions}
 	
 	In this section, we describe optimality conditions for nonlinear programs more general than~\eqref{eq:model_cnls} from different views.
 	
@@ -409,11 +409,11 @@
 	 
 	 \subsection{Preconditioning}
 	 
-	 The idea of preconditioning is to apply the CG method to a modified version of system~\eqref{eq:qp_linear_syst} after applying a change of variables of the form $x=R^{-1}x$, with $R \in GL_n(\RR)$ is a \textit{preconditioner}. Rewriting the system w.r.t. $\bar{x}$ gives 
+	 The idea of preconditioning is to apply the CG method to a modified version of system~\eqref{eq:qp_linear_syst} after applying a change of variables of the form $x=R^{-1}\bar{x}$, with $R \in GL_n(\RR)$ is a \textit{preconditioner}. Rewriting the system w.r.t. $\bar{x}$ gives 
 	 \begin{equation}\label{eq:cg_preconditioned_system}
 	 	\bar{H}\bar{x} = \bar{c},
 	 \end{equation}
-	 where $\bar{H}:= R^{-T}HR^T$ and $\bar{c}:= R^{-T}c$. This implies that the preconditioner should be chosen such that the transformed Hessian $\bar{H}$ has a better eigenvalue distribution than $H$.
+	 where $\bar{H}:= R^{-T}HR^{-1}$ and $\bar{c}:= R^{-T}c$. This implies that the preconditioner should be chosen such that the transformed Hessian $\bar{H}$ has a better eigenvalue distribution than $H$.
 	 
 	 One could directly apply algorithm~\ref{algo:cg_method} to system~\eqref{eq:cg_preconditioned_system}, to get the solution $\bar{x}^*$ and then back transform to obtain the solution of the original problem $x^*=R^{-1}\bar{x}^*$. On paper this works but it has the disadvantage to require an explicit computation of $\bar{H}$, which we do not want in practice. Forming this matrix matrix could, for instance, ruin the sparsity pattern of the original matrix $H$. We would prefer to formulate an method where iterates are manipulated implicitly by using their expressions w.r.t. the original variables. 
 	 
@@ -471,7 +471,7 @@
 	  \begin{equation}\label{eq:qp_null_space}
 	 		\min_{x^N} q^N(x^N) = \dfrac{1}{2} \scal{x^N}{H^Nx^N} - \scal{c^N}{x^N}
 	 \end{equation}
-	 where $q^N(x^N) := q(Nx^N)$ (giving $H^N:=N^THN$ and $c^N:=N^Tc$), and then multiply by $N$ to get the desired solution. Tis would make sense only if $H^N \succ 0$, which we will assume.
+	 where $q^N(x^N) := q(Nx^N)$ (giving $H^N:=N^THN$ and $c^N:=N^Tc$), and then multiply by $N$ to get the desired solution. This would make sense only if $H^N \succ 0$, which we will assume.
 	 
 	 Projected CG consists into applying the CG method, or the preconditioned version, to problem~\eqref{eq:qp_null_space}.	As for the PCG, algorithm, we prefer to express the iterations in terms of the original variable $x$ and implicitly update the variable $x^N$. This procedure is outlined in algorithm~\ref{algo:projected_pcg_method} and makes use of a preconditioner $M^N$ for $H^N$.
 	 
@@ -496,31 +496,10 @@
 	\[M^N=N^TMN,\]
 	where $M$ is a preconditioner approximating $H$. The system previously discussed now becomes
 	 \[v_k = N(N^TMN)^{-1}N^Tr_k\]
-	 which does not look more appealing at first glance but is actually is because $P := N(N^TMN)^{-1}N^T$ is a projection matrix. Hence, the properties of projection enable one to compute a matrix vector product involving $P$ through equivalent systems of, maybe, higher dimension, but that preserve the structure of the problem and do not require to form the matrix $P$. For instance, when $M=I$, $P$ is the orthogonal projection onto the null space of $A$ and verifies
+	 which does not look more appealing at first glance but is actually is because $P := N(N^TMN)^{-1}N^T$ is a projection matrix. Hence, the properties of projection enable one to compute a matrix vector product involving $P$ through equivalent systems of, maybe, higher dimension, but that preserve the structure of the problem and do not require to explicitly form the matrix $P$. For instance, when $M=I$, $P$ is the orthogonal projection onto the null space of $A$ and verifies
 	 \[P = I-A^T(AA^T)^{-1}A.\]
-	 Therefore, computing $v=Pr$ is equivalent to solving normal equations or the augmented system
-	 \[\begin{pmatrix}
-	 	I & A^T \\
-	 	A & 0
-	 \end{pmatrix} \begin{pmatrix}
-	 v \\ w 
-	 \end{pmatrix} = \begin{pmatrix}
-	 r \\ 0
-	 \end{pmatrix},\]
-	 
-	 with the addition of an auxiliary variable $w$. A different choice of $H$ would lead to the similar system
-	 \begin{equation}\label{eq:augmented_system_pcg}
-	 	\begin{pmatrix}
-	 	H & A^T \\
-	 	A & 0
-	 \end{pmatrix} \begin{pmatrix}
-	 	v \\ w 
-	 \end{pmatrix} = \begin{pmatrix}
-	 	r \\ 0
-	 \end{pmatrix}.
-	 \end{equation}
-	 
-	 Choosing one approach or the other will depend on the structure of the problem, the predoncitioner, the access to a factorization of the augmented matrix, etc. The important thing to remember from this discussion is that we do not need to explicitly form the null space matrix $N$.
+	 Therefore, one can compute $v=Pr$ by solving an\textit{augmented system} or \textit{normal equations}\footnote{We highlight in italic because it is the first time we encounter these words}. Those terms and their associated procedures are discussed in subsection~\ref{subsec:cg_feasible_solution}.
+	 Choosing one approach or the other will depend on the structure of the problem, the preconditioner, the access to a factorization of the augmented matrix, etc. The important thing to remember from this discussion is that we do not need to explicitly form the null space matrix $N$.
 	 
 	 For the case $b\neq 0$, the only difference will be the initialization. Any vector $x$ can be composed into the sum of two components
 	 \begin{equation}\label{eq:range_null_space_decomp}
@@ -528,9 +507,7 @@
 	 \end{equation}
 	 where $N$ is the null space matrix of $A$ as before and $x^R$ satisfies $Ax^R=b$. It is the direct sum structure (special solution) + (element of null space). 
 	 
-	 Such an $x^R$ can be computed by solving the normal equations 
-	 \[A^T(AA^T)^{-1}b,\] 
-	 or an augmented system similar to~\eqref{eq:augmented_system_pcg}. With fixed $x^R$, one can substitute~\eqref{eq:range_null_space_decomp} into~\eqref{eq:qp_linear_constraints}. Any point of the form~\eqref{eq:range_null_space_decomp} satisfies the constraints, thus one can remove them and retrieve, as earlier, an unconstrained QP expressed in terms of $x^N$ also involving the reduced Hessian $N^THN$. Only the right hand side $c^N$ will differ.
+	 Such an $x^R$ can be also be computed by normal equations or an augmented system (see subsection~\ref{subsec:cg_feasible_solution}). With fixed $x^R$, one can substitute~\eqref{eq:range_null_space_decomp} into~\eqref{eq:qp_linear_constraints}. Any point of the form~\eqref{eq:range_null_space_decomp} satisfies the constraints, thus one can remove them and retrieve, as earlier, an unconstrained QP expressed in terms of $x^N$ also involving the reduced Hessian $N^THN$. Only the right hand side $c^N$ will differ.
 	 
 	 The discussion and strategies about preconditioning are not affected. The only difference with algorithm~\eqref{algo:preliminary_projected_pcg_method} is that we require the initial point to satisfy $Ax=b$. To lighten the notations, we will use the projector preconditioner $P= N(N^TMN)^{-1}N^T$ where $M$ is a preconditioner for $H$. The full procedure of the Projected CG method is outlined in algorithm~\ref{algo:projected_pcg_method} 
 	 
@@ -550,6 +527,70 @@
 	 		\Return $x_k$
 	 	\end{algorithmic}
 	 \end{algorithm} 
+	 
+	 \subsection{Computing a feasible solution and projections}\label{subsec:cg_feasible_solution}
+	 
+	 As mentioned in the previous section, the projected version of the CG (algorithm~\ref{algo:projected_pcg_method}) requires that the starting point satisfies the linear equality constraints $Ax=b$. We assume $b\neq0$ and voluntarily omit the case where $b=0$ because $x=0$ always works. The goal of this subsection is to explain what the terms \textit{normal equations} and \textit{augmented system} refer to. To draw the big picture, they are different formulations of linear systems that both lead to a feasible solution. We shall see that they also both derive from the same KKT conditions.
+	 
+	 
+	 The term \textit{normal equations} might sound familiar because it refers to the system $A^TAx=A^Tb$ which is nothing but the first order optimality conditions of the linear least-squares problem
+	 \begin{equation}\label{eq:linear_least_squares}
+	 	\min_x\ \dfrac{1}{2} \left\Vert Ax-b\right\Vert^2,
+	 \end{equation} 
+	 for the case of $m\le n$. This corresponds to finding the point on the range of $A$ that is the closest to $b$. Our case is different because we have $m < n$ so $A$ is surjective. This means that the system $Ax=b$ has at least one solution, if not several. How to choose? Well, we could for the least norm solution, i.e. the solution of the QP
+	 \begin{equation}\label{eq:least_norm_pb}
+	 	\begin{aligned}
+	 		\min_x & \quad \dfrac{1}{2}\|x\|^2 \\
+	 		\text{s.t.} & \quad Ax=b.
+	 	\end{aligned}
+	 \end{equation}
+	 
+	 We will not make the joke of saying one can solve this problem by applying algorithm~\ref{algo:projected_pcg_method} but shall derive results from the first-order optimality conditions. The Lagrangian of problem~\eqref{eq:least_norm_pb} is given by
+	 \[\ell(x,y) = \dfrac{1}{2}\|x\|^2 + \scal{y}{Ax-b},\]
+	 By the full rank assumption, LICQ holds and thus there is $(x,y)$ satisfying the KKT conditions
+	 \begin{align*}
+	 	x + A^Ty &= 0 \\
+	 	Ax &= b,
+	 \end{align*} 
+	 
+	 Which can be written as the system of unknowns $(x,y)$
+	 \[\begin{pmatrix}
+	 	I & A^T \\
+	 	A & 0
+	 \end{pmatrix} \begin{pmatrix}
+	 	x \\ y 
+	 \end{pmatrix} = \begin{pmatrix}
+	 	0 \\ b
+	 \end{pmatrix}.\]
+	 Solving the latter is the \textit{augmented system} approach. In this sytem, the variable $y$ plays the role of an auxiliary variable, since we are just interested in $x$. We could also rearrange the equations by substituting the first equation into the second to get
+	 \[y=-(AA^T)^{-1}b,\]
+	 and then 
+	 \[x = A^T(AA^T)^{-1}b.\]
+	 
+	 Note that the first system is well defined because $A$ full rank implies that $AA^T$ is invertible. This is the \textit{normal equations} approach. 
+	 
+	 is equivalent to solving normal equations or the augmented system
+	 \[\begin{pmatrix}
+	 	I & A^T \\
+	 	A & 0
+	 \end{pmatrix} \begin{pmatrix}
+	 	v \\ w 
+	 \end{pmatrix} = \begin{pmatrix}
+	 	r \\ 0
+	 \end{pmatrix},\]
+	 
+	 with the addition of an auxiliary variable $w$. A different choice of $H$ would lead to the similar system
+	 \begin{equation}\label{eq:augmented_system_pcg}
+	 	\begin{pmatrix}
+	 		H & A^T \\
+	 		A & 0
+	 	\end{pmatrix} \begin{pmatrix}
+	 		v \\ w 
+	 	\end{pmatrix} = \begin{pmatrix}
+	 		r \\ 0
+	 	\end{pmatrix}.
+	 \end{equation}
+	 
 	\section{Generalities on least squares}
 	 
 	 Rewriting the objective function of problem~\eqref{eq:model_cnls} as $f\colon x \mapsto  \frac{1}{2} \|r(x)\|^2$, one has:
