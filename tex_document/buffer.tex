@@ -1,0 +1,169 @@
+\documentclass[10pt]{article}
+\usepackage{graphicx}
+\baselineskip=16pt
+
+\usepackage{indentfirst,csquotes}
+
+\topmargin= .5cm
+\textheight= 20cm
+\textwidth= 32cc
+\baselineskip=16pt
+
+\evensidemargin= .9cm
+\oddsidemargin= .9cm
+
+\usepackage{amssymb,amsthm,amsmath}
+\usepackage{xcolor,paralist,hyperref,fancyhdr,etoolbox}
+
+
+\newtheorem{theorem}{Theorem}[]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+
+\hypersetup{colorlinks=true, linkcolor=black, filecolor=black, urlcolor=black }
+\def\proof{\noindent {\it Proof. $\, $}}
+\def\endproof{\hfill $\Box$ \vskip 5 pt }
+
+
+
+
+
+
+
+
+
+%%% PERSONAL ADD-ONS
+\usepackage[square,sort,comma,numbers]{natbib}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\allowdisplaybreaks
+%\numberwithin{equation}{section}
+%\usepackage{natbib}
+\include{macros}
+
+% For foot notes in author name
+\newcommand{\footremember}[2]{%
+	\footnote{#2}
+	\newcounter{#1}
+	\setcounter{#1}{\value{footnote}}%
+}
+\newcommand{\footrecall}[1]{%
+	\footnotemark[\value{#1}]%
+} 
+
+\begin{document}
+	
+	
+	\title{Augmented Lagrangian for Least-Squares} %%%%%%%%%%%%
+	\author{Pierre Borie\footremember{1}{University of Montreal, Department of Computer Science and Operations Research, Montreal, QC, Canada}}
+	\date{}
+	
+	
+	
+	\maketitle
+	
+	\section*{Notations}
+	We consider constrained nonlinear least squares problems of the form
+	\begin{equation}
+		\label{eq:model_cnls}
+		\begin{aligned}
+			\min_{x\in \RR^n} \quad & \dfrac{1}{2} \|r(x)\|^2 \\
+			\text{s.t.} \quad & h(x) = 0 \\
+			& \scal{c_i}{x} = b_i\quad i=1,\ldots,m \\
+			& l \le x \le u,
+		\end{aligned}
+	\end{equation}
+	where $r\colon \RR^n \to \RR^d$  and $h\colon \RR^n \to \RR^t$ are assumed to be nonlinear, potentially non convex, continuously differentiable functions, $\scal{\cdot}{\cdot}$ is the canonical inner product and $\|\cdot\| $  its induced euclidean norm, $c_i$ are $m$  independent vectors of $\Real^n$, $( m \le n)$, $b=(b_1,\ldots,b_m)^T \in \RR^m$ and $\ell$ and $u$ are vectors in $\RR^n$. Without loss of generality, some components of the latter two vectors can be set to $\pm \infty$ for unbounded parameters. In the context of least squares problems, components $r_i$ of the function $r$ are often denoted as the residuals.
+	
+	We will also refer to the linear constraints using the following set notation 
+	
+	\begin{equation}
+		\label{eq:linear_constraints}
+		\calX = \left\{ x \in \RR^n \ | \ Cx=b,\ l \le x \le u\right\},
+	\end{equation}
+	where $C$ is the matrix whose columns are the vectors $c_i$. By linear independence of those vectors, $C$ is a full rank matrix.
+	
+	The method presented in this report is conceived around an Augmented Lagrangian (AL) function where only the violation of the nonlinear constraints is penalized. Its expression is given by	
+	\begin{equation}
+		\label{eq:lsal}
+		\Phi_A(x,\lambda,\mu) := \dfrac{1}{2}\|r(x)\|^2 + \scal{\lambda}{h(x)} + \dfrac{\mu}{2} \|h(x)\|^2,
+	\end{equation}
+	We keep the linear constraints as is and only penalize the violation of the nonlinear constraints. 
+	One has the following expression of the gradient: 
+	\begin{equation}
+		\label{eq:al_grad}
+		\nabla_x \Phi_A(x,\lambda,\mu) = J(x)^Tr(x) + A^T\pi(x,\lambda,\mu),
+	\end{equation}
+	with $\pi(x,\lambda,\mu):=\lambda + \mu h(x)$ is the first-order estimates of the Lagrange multipliers. 
+	
+	The Hessian is given by
+	\begin{equation}\label{eq:al_hessian}
+		\nabla^2_{xx} \Phi_A(x,\lambda,\mu) = J(x)^TJ(x) + \mu A(x)^TA(x) +  \sum_{i=1}^d r_i(x)\nabla^2r_i(x) + \sum_{i=1}^d \nabla^2 h_i(x) \pi(x,\lambda,\mu).
+	\end{equation}
+	
+	For fixed $\lambda$ and $\mu$, replacing the objective function with the AL gives the linearly constrained problem
+	
+	\begin{equation}\label{eq:model_cnls_al_reformulation} 
+		\begin{aligned}
+			\min_{x} \quad& \Phi_A(x,\lambda,\mu)  \\
+			\text{s.t.}  \quad & x \in \calX.
+		\end{aligned}	
+	\end{equation}
+	
+	A local minimum $x^*$ of \eqref{eq:model_cnls_al_reformulation} then satisfies the first-order necessary condition
+	\[x^*-P_\calX(\Phi_A(x^*,\lambda,\mu)=0,\]
+	where $P_\calX$ denotes the projection operator onto the set $\calX$.
+	\section{The method}
+	
+	Let's consider a primal-dual iterate $(x_k,\lambda_k)$ such that $x_k \in \calX$ and a penalty parameter $\mu_k$. Each iteration consists into computing an approximating minimizer $x_{k+1}$ of~\eqref{eq:model_cnls_al_reformulation} starting from $x_k$ and such that
+	\[\left\Vert x_{k+1}-P_\calX(\Phi_A(x_{k+1},\lambda_k,\mu_k)\right\Vert \le \omega_k,\]
+	
+	where $\omega_k$ is a small tolerance. Index $k$ means that we will adapt its value at each iteration (the closer from the solution, the small it will be). The iterate is computed by a trust region method. To do so, we first construct a quadratic model of the AL around $x_k$:
+	
+	\begin{equation}\label{eq:quadratic_al}
+		\calQ_k(p) = \dfrac{1}{2}\scal{p}{H_kp} + \scal{g_k}{p},
+	\end{equation}
+	
+	with $H_k\approx\nabla^2_{xx} \Phi_A(x_k,\lambda_k,\mu_k)$  and $g_k:=\nabla_x \Phi_A(x_k,\lambda_k,\mu_k)$. We compute the step $p_k$ by approximately minimizing the quadratic program
+	\begin{equation}\label{eq:quadratic_subpb} 
+		\begin{aligned}
+			\min_{p} \quad& \calQ_k(p)  \\
+			\text{s.t.}  \quad &  x_k+p\in \calX\\
+			& \|p\|_\infty \le \Delta_k.
+		\end{aligned}	
+	\end{equation}
+	Finally, we update the iterate by $x_{k+1}=x_k+p_k$.
+	
+	Since we assumed $x_k$ is feasible, it is sufficient that the step satisfies:
+	\begin{itemize}
+		\item \(Cp=0\)
+		\item $ \bar{l} = \max(x_k-l,\Delta_k) \le p \le \min (u-x_k,\Delta_k) = \bar{u}$,
+	\end{itemize}
+	(the $\max$ and $\min$ are applied component-wise).
+	
+	\subsection{The inner iteration}
+	
+	For a point $x$, we define $\calA(x):=\left\{i\ \vert \ x_i \in \{\bar{l}_i,\bar{u}_i\}\right\}$ the indices of bounds constraints active at $x$.
+	
+	To compute the step, we follow the approach of~\citet{linmore:1999a} and successively apply the conjugate gradient method and adaptively modify the active set if we encounter a bound or the trust region.
+	
+	In order to do so, we compute $m+1$ minor iterates $x_{k,1}, \ldots, x_{k,m+1}$ with $x_{k,1}=x_k$ and $p_k=x_{k,m+1}-x_k$. Each minor iterate is updated by $x_{k,j+1}=x{k,j}+p_{k,j}$, where $p_{k,j}$is an approximate solution the QP
+	\begin{equation}\label{eq:minor_iterate_subpb}
+		\begin{aligned}
+			\min_{p} \quad& \calQ_k(p)  \\
+			\text{s.t.}  \quad &  Cp=0\\
+			& p_i=0,\quad i\in \calA(x_{k,j}),
+		\end{aligned}	
+	\end{equation}
+	starting from $x_{k,j}$. Subproblem~\eqref{eq:minor_iterate_subpb} is solved by the projected conjugate gradient method with early stopping if we encounter a bound or the trust region. The next active set $\calA(x_{k,j+1})$ is formed after $\calA(x_{k,j})$ and the bounds newly active.  
+	\clearpage
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs}
+	
+\end{document}
