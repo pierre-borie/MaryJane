@@ -116,12 +116,14 @@
 	\end{equation}
 	
 	A local minimum $x^*$ of \eqref{eq:model_cnls_al_reformulation} then satisfies the first-order necessary condition
-	\[x^*-P_\calX(\Phi_A(x^*,\lambda,\mu)=0,\]
+	\[x^*-P_\calX(x^* -\nabla_x\Phi_A(x^*,\lambda,\mu)=0,\]
 	where $P_\calX$ denotes the projection operator onto the set $\calX$.
 	\section{The method}
 	
 	Let's consider a primal-dual iterate $(x_k,\lambda_k)$ such that $x_k \in \calX$ and a penalty parameter $\mu_k$. Each iteration consists into computing an approximating minimizer $x_{k+1}$ of~\eqref{eq:model_cnls_al_reformulation} starting from $x_k$ and such that
-	\[\left\Vert x_{k+1}-P_\calX(\Phi_A(x_{k+1},\lambda_k,\mu_k)\right\Vert \le \omega_k,\]
+	\begin{equation}\label{eq:al_approximate_optimality}
+		\left\Vert x_{k+1}-P_\calX(x_{k+1}-\nabla_x\Phi_A(x_{k+1},\lambda_k,\mu_k)\right\Vert \le \omega_k,
+	\end{equation}
 	
 	where $\omega_k$ is a small tolerance. Index $k$ means that we will adapt its value at each iteration (the closer from the solution, the small it will be). The iterate is computed by a trust region method. To do so, we first construct a quadratic model of the AL around $x_k$:
 	
@@ -137,7 +139,6 @@
 			& \|p\|_\infty \le \Delta_k.
 		\end{aligned}	
 	\end{equation}
-	Finally, we update the iterate by $x_{k+1}=x_k+p_k$.
 	
 	Since we assumed $x_k$ is feasible, it is sufficient that the step satisfies:
 	\begin{itemize}
@@ -146,9 +147,51 @@
 	\end{itemize}
 	(the $\max$ and $\min$ are applied component-wise).
 	
+	If the candidate step $x_k+p_k$ does not satisfy~\eqref{eq:al_approximate_optimality}, we decrease the trust region radius $\Delta_k$ and restart the minimization procedure.
+	Once the conditions is verified, we update the iterate by $x_{k+1}=x_k+p_k$ and then check the violation of the nonlinear constraints. 
+	
+	If the violation is lower than a given tolerance $\eta_k$, (depends on the iteration), than the step is fully accepted. We thus update the Lagrange multipliers by the first-order estimates, slightly increase the penalty parameter $\mu_k$ and decrease the tolerances $\omega_k, \eta_k$. If the constraints violation condition is not satisfied, this means that the next iteration should emphasis on feasibility. We thus keep the Lagrange multipliers and tolerances but increase more significantly the penalty parameter. 
+	
+	
+	The procedure is outlined is algorithm~\ref{algo:outer_basic_al_trm} 
+	
+	\begin{algorithm}
+		\caption{Outer iteration of basic AL algorithm with trust region}\label{algo:outer_basic_al_trm}
+		\begin{enumerate}
+			\item[\textbf{Step 0: Initialization}]
+			
+			Choose a feasible starting point $x_0$, vector of Lagrange multipliers estimates $\lambda_0$. 
+			
+			Set the penalty parameter to $\mu_0>1$, the tolerances $\omega_0>0, \eta_0 > 0$. Start the  iteration index $k$ at $0$.
+			\item[\textbf{Step 1: Inner Iteration}]
+			
+			Starting from $x_k$, approximately solve \[\min_{x\in \calX} \Phi_A(x,y_k,\mu_k)\] by computing $x_{k+1}$ verifying condition~\eqref{eq:al_approximate_optimality}.
+			
+			\textbf{If} $\|h(x_k)\| \le \eta_k$, execute \textbf{Step 2}.
+			
+			Otherwise, execute \textbf{Step 3}.
+			
+			\item[\textbf{Step 2: Iterate Update}]
+			
+			Update $\lambda_{k+1} \gets \lambda_k + \mu_kh(x_k)$ and set $x_{k+1}^s \gets x_k $.
+			
+			Choose new tolerances \(\omega_{k+1}, \eta_{k+1}\) and new penalty parameter \(\mu_{k+1} > \mu_k\).
+			
+			Increment $k$ and go back to \textbf{Step 1}.
+			
+			\item[\textbf{Step 3: Adjustment of the Penalty Parameter}] 
+			
+			Choose $\mu_{k+1}$ significantly greater than $\mu_k$ and new tolerances \(\omega_{k+1}, \eta_{k+1}\).
+			
+			Leave the multipliers and tolerances unchanged: $\lambda_{k+1} \gets \lambda_k$.
+			
+			Increment $k$ Go back to \textbf{Step 1}.
+		\end{enumerate}
+	\end{algorithm}
+	
 	\subsection{The inner iteration}
 	
-	For a point $x$, we define $\calA(x):=\left\{i\ \vert \ x_i \in \{\bar{l}_i,\bar{u}_i\}\right\}$ the indices of bounds constraints active at $x$.
+	For a point $x$, we define $\calA(x):=\left\{i\ \vert \ x_i \in \{\bar{l}_i,\bar{u}_i\}\right\}$ the indices of bounds constraints active at $x$. This set mixes the bounds from the problem and the trust region.
 	
 	To compute the step, we follow the approach of~\citet{linmore:1999a} and successively apply the conjugate gradient method and adaptively modify the active set if we encounter a bound or the trust region.
 	
@@ -161,6 +204,13 @@
 		\end{aligned}	
 	\end{equation}
 	starting from $x_{k,j}$. Subproblem~\eqref{eq:minor_iterate_subpb} is solved by the projected conjugate gradient method with early stopping if we encounter a bound or the trust region. The next active set $\calA(x_{k,j+1})$ is formed after $\calA(x_{k,j})$ and the bounds newly active.  
+
+	\subsection{Questions}
+	\begin{itemize}
+		\item Would it be interesting to start the inner from the Cauchy point? If yes how to compute it, i.e. how to project the steepest direction on the feasible set?
+		\item Which approximation of the Hessian $\nabla^2_{xx} \Phi_A(x_k,\lambda_k,\mu_k)$?
+		\item Rules for the update of the penalty parameter, the tolerances, the trust region radius?
+	\end{itemize}
 	\clearpage
 	
 	\bibliographystyle{plainnat}
