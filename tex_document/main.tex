@@ -61,7 +61,7 @@
 \begin{document}
 	
 	
-	\title{Ongoing work on MCWAL} %%%%%%%%%%%%
+	\title{Ongoing work on TRALCNLLSS} %%%%%%%%%%%%
 	\author{Pierre Borie\footremember{1}{University of Montreal, Department of Computer Science and Operations Research, Montreal, QC, Canada}}
 	\date{}
 	
@@ -71,7 +71,7 @@
 	\tableofcontents
 	
 	\begin{abstract}
-		\noindent This informal document deals with the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm  name is MCWAL for Moindres Carr\'es With Augmented Lagrangian. Some sections about more general aspects about nonlinear programming might also appear here and there. The aim of this document is to reflect the thinking and understanding of different kinds of notions. 
+		\noindent This informal document deals with the ongoing work and thinking on a algorithm for constrained nonlinear least squares. The current algorithm  name is TRALCNLLSS for Trust Region Augmented Lagrangian Constrained Nonlinear Least-Squares Solver. Some sections about more general aspects about nonlinear programming might also appear here and there. The aim of this document is to reflect the thinking and understanding of different kinds of notions. 
 	\end{abstract} %%%%%%%%% 
 	
 
@@ -785,7 +785,7 @@
 	 
 	 As for any other AL based algorithm, the idea behind MCWAL is to solve by an iterative method problem~\eqref{eq:model_cnls_al_reformulation} until a first order critical point of problem~\eqref{eq:model_cnls} is found. At every iteration, a the new iterate will be computed after (approximately) solving a trust region subproblem formed after a quadratic model of the AL around the current iterate. 
 	 
-	 \subsection{Subproblem}
+	 \subsection{Subproblem}\label{subsec:subproblem}
 	 
 	 Given a primal-dual iterate $(x_k,\lambda_k)$ and a penalty parameter $\mu_k$, we consider a quadratic model of the AL around $x_k$:
 	 
@@ -808,7 +808,7 @@
 	
 	The subproblem of an outer iteration is then given by
 	
-	\begin{equation}\label{eq:quadratic_subpb} 
+	\begin{equation}\label{eq:qsubpb_general_form} 
 		\begin{aligned}
 			\min_{p\in \calX_k} \quad& \calQ_k(p)  \\
 			\text{s.t.}  \quad &  \|p\|_k \le \Delta_k.
@@ -843,8 +843,41 @@
 	 		\EndWhile
 	 	\end{algorithmic}
 	 \end{algorithm}
-	
+	 
+	 \subsection{The inner iteration}
+	 
+	 In this subsection, we present how to solve subproblem~\eqref{eq:qsubpb_general_form}. Let's consider the current feasible iterate $x_k$ and it's associate approximate quadratic model $\calQ_k$ as defined in the previous section. To be more specific, we seek to compute the step $p_k$ as an approximate solution of the program
+	 
+	 \begin{equation*}
+	 	\begin{aligned}
+	 		\min_{p\in \calX_k} \quad& \calQ_k(p)  \\
+	 		\text{s.t.}  \quad &  \|p\|_\infty \le \Delta_k.
+	 	\end{aligned}	
+	 \end{equation*}
+	 Since the infinite-norm trust region is equivalent to imposing $x_i \in [-\Delta,\Delta]$ for all $i$, we can rewrite this subproblem
 
+	\begin{equation}\label{eq:qsubpb} 
+		\begin{aligned}
+			\min_{p} \quad& \calQ_k(p)  \\
+			\text{s.t.}  \quad &  \scal{c_i}{p} = 0,\quad i=1,m
+			& \bar{l} \le p \bar{u},
+		\end{aligned}	
+	\end{equation}
+	with $\bar{l}:= \max(-\Delta,l-x_k)$ and $\bar{u}:= \min(\Delta,u-x_k)$ (maximums and minimums are taken component wise).
+	
+	The optimization process consists into applying the gradient projection method. This consists into applying the conjugate gradient method until a bound is reached and restart with a new active set until a termination criteria is full filled.
+	
+	Using $x_k$, we first find a starting point $x_k^s$ that achieves a sufficient reduction, such as the Cauchy point. Bound constraints that are active as the latter are fixed and described by the set of index $\calA(x_k^s)$. 
+	
+	In this context, $\calA(x):=\left\{i\ \vert \ x_i \in \{\bar{l}_i,\bar{u}_i\}\right\}$.
+	
+	Then, we follow~\cite{linmore:1999a} and build the next iterate $x_{k+1}$ after a sequence of $q+1$ minor iterates $x_{k,1},\ldots,x_{k,q+1}$ such that
+	\begin{itemize}
+		\item $x_{k}^s=x_{k,1}$
+		\item $x_{k+1}=x_{k,q+1}$ 
+	\end{itemize}
+	
+	
 	\clearpage
 	
 	\bibliographystyle{plainnat}
