@@ -794,9 +794,11 @@
 	 \begin{equation}\label{eq:al_quadratic _model}
 	 	m_k(x) = m_k(x_k) + \dfrac{1}{2}\scal{p}{H_kp} + \scal{g_k}{x-x_k} + \dfrac{1}{2}\scal{x-x_k}{H_k(x-x_k)},
 	 \end{equation}
-	 where $m_k(x_k):=\Phi_A(x_k,\lambda_k,\mu_k)$, $g_k:=\nabla_x \Phi_A(x_k,\lambda_k,\mu_k)$ and $H_k:=\nabla^2_{xx} \Phi_A(x_k,\lambda_k,\mu_k)$ or a symmetric approximation of it.
+	 where $m_k(x_k):=\Phi_A(x_k,\lambda_k,\mu_k)$, $g_k:=\nabla_x \Phi_A(x_k,\lambda_k,\mu_k)$ and $H_k:=\nabla^2_{xx} \Phi_A(x_k,\lambda_k,\mu_k)$ or a symmetric approximation of it. For now, we define $\calQ_k$ as the Gauss-Newton model, obtained after merely linearizing the residuals and constraints in expression~\eqref{eq:lsal}, which gives
 	 
-	 This model is appropriate to describe the algorithm in terms of the iterate. When discussing about subproblems, we prefer to emphasis on the step and would then use the following model of the primal reduction $\Phi_A(x_k+p,\lambda_k,\mu_k)-\Phi_A(x_k,\lambda_k,\mu_k)$:
+	 \[H_k = J(x_k)^TJ(x_k) + \mu A(x_k)^TA(x_k).\]
+	 
+	 Model~\eqref{eq:al_quadratic _model} is appropriate to describe the algorithm in terms of the iterate. When discussing about subproblems, we prefer to emphasis on the step and would then use the following model of the primal reduction $\Phi_A(x_k+p,\lambda_k,\mu_k)-\Phi_A(x_k,\lambda_k,\mu_k)$:
 	 \begin{equation}\label{eq:al_quadratic_reduction_model}
 	 	\calQ_k(s) = \dfrac{1}{2}\scal{s}{H_ks} + \scal{g_k}{s}.
 	 \end{equation}
@@ -858,11 +860,12 @@
 	 
 	 \subsection{The inner iteration}
 	 
-	 In this subsection, we present how to solve subproblem~\eqref{eq:qsubpb_general_form}. Let's consider the current feasible iterate $x_k$ and it's associate approximate quadratic model $\calQ_k$ as defined in the previous section. To be more specific, we seek to compute the step $p_k$ as an approximate solution of the program
+	 In this subsection, we present how to solve subproblem~\eqref{eq:qsubpb_general_form}. Let's consider the current feasible iterate $x_k$ and it's associate approximate quadratic model $\calQ_k$ as defined in the previous section.
+	 We seek to compute the step $s_k$ as an approximate solution of the program
 	 
 	 \begin{equation*}
 	 	\begin{aligned}
-	 		\min_{p} \quad& \calQ_k(s)  \\
+	 		\min_{s} \quad& \calQ_k(s)  \\
 	 		\text{s.t.}  \quad & x_k+s \in \calX \\ 
 	 		& \|s\|_\infty \le \Delta_k,
 	 	\end{aligned}	
